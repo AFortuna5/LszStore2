@@ -113,6 +113,7 @@ export default function AccountPage() {
 
   async function logout() {
     await fetch("/api/users", { method: "DELETE" });
+    window.dispatchEvent(new Event("lsz-auth-updated"));
     router.push("/login");
     router.refresh();
   }

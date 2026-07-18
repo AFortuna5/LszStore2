@@ -1,15 +1,58 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Search, ShoppingCart, User, Menu, X } from "lucide-react";
+import { Search, ShieldCheck, ShoppingCart, User, Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { usePathname } from "next/navigation";
+
+type SessionUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+};
+
+async function getSessionUser() {
+  const response = await fetch("/api/auth/me", {
+    cache: "no-store",
+    credentials: "same-origin",
+  });
+  const payload = response.ok ? await response.json() : null;
+  return (payload?.user ?? null) as SessionUser | null;
+}
 
 export default function Header() {
+  const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    getSessionUser()
+      .then((user) => {
+        if (active) setSessionUser(user);
+      })
+      .catch(() => {
+        if (active) setSessionUser(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [pathname]);
+
+  useEffect(() => {
+    const handleAuthUpdate = () => {
+      getSessionUser()
+        .then(setSessionUser)
+        .catch(() => setSessionUser(null));
+    };
+    window.addEventListener("lsz-auth-updated", handleAuthUpdate);
+    return () => window.removeEventListener("lsz-auth-updated", handleAuthUpdate);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -92,6 +135,15 @@ export default function Header() {
                 {item.label}
               </Link>
             ))}
+            {sessionUser?.role === "ADMIN" && (
+              <Link
+                href="/admin"
+                className="flex items-center gap-2 rounded border border-neon-blue/60 px-3 py-2 font-poppins text-sm font-bold text-neon-blue transition-colors hover:bg-neon-blue hover:text-black"
+              >
+                <ShieldCheck size={17} />
+                Administração
+              </Link>
+            )}
           </nav>
 
           {/* Icons */}
@@ -105,7 +157,7 @@ export default function Header() {
                 {cartCount}
               </span>
             </Link>
-            <Link href="/login" className="hidden md:block text-white hover:text-neon-blue transition-colors" aria-label="Minha conta">
+            <Link href={sessionUser ? "/minha-conta" : "/login"} className="hidden md:block text-white hover:text-neon-blue transition-colors" aria-label={sessionUser ? `Minha conta: ${sessionUser.name}` : "Entrar"}>
               <User size={20} />
             </Link>
           </div>
@@ -137,6 +189,16 @@ export default function Header() {
                 <User size={20} />
                 <span className="font-poppins">Minha Conta</span>
               </Link>
+              {sessionUser?.role === "ADMIN" && (
+                <Link
+                  href="/admin"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 font-bold text-neon-blue hover:text-white"
+                >
+                  <ShieldCheck size={20} />
+                  <span className="font-poppins">Administração</span>
+                </Link>
+              )}
             </nav>
           </motion.div>
         )}

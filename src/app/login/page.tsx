@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ShieldCheck } from "lucide-react";
 
 import SiteShell from "@/templates/layout/SiteShell";
 
@@ -20,7 +21,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch("/api/auth/me")
+    fetch("/api/auth/me", { cache: "no-store", credentials: "same-origin" })
       .then((response) => (response.ok ? response.json() : null))
       .then((data) => setUser(data?.user ?? null))
       .catch(() => setUser(null));
@@ -48,6 +49,7 @@ export default function LoginPage() {
     }
 
     setUser(payload.user);
+    window.dispatchEvent(new Event("lsz-auth-updated"));
     router.push(payload.user.role === "ADMIN" ? "/admin" : "/minha-conta");
     router.refresh();
   }
@@ -75,6 +77,7 @@ export default function LoginPage() {
     }
 
     setUser(payload.user);
+    window.dispatchEvent(new Event("lsz-auth-updated"));
     router.push("/minha-conta");
     router.refresh();
   }
@@ -82,6 +85,7 @@ export default function LoginPage() {
   async function handleLogout() {
     await fetch("/api/users", { method: "DELETE" });
     setUser(null);
+    window.dispatchEvent(new Event("lsz-auth-updated"));
     setMessage("Sessao encerrada.");
     router.refresh();
   }
@@ -102,18 +106,31 @@ export default function LoginPage() {
             </p>
             {user && (
               <div className="mt-6 rounded border border-border bg-dark-blue p-4 text-sm text-silver">
-                Logado como <span className="text-white">{user.name}</span>
-                <button
-                  onClick={handleLogout}
-                  className="ml-4 text-neon-blue transition-colors hover:text-white"
-                >
-                  Sair
-                </button>
+                <p>Logado como <span className="text-white">{user.name}</span></p>
+                <div className="mt-4 flex flex-wrap gap-3">
+                  <Link href="/minha-conta" className="rounded border border-border px-4 py-2 font-bold text-white hover:border-neon-blue hover:text-neon-blue">
+                    Minha conta
+                  </Link>
+                  {user.role === "ADMIN" && (
+                    <Link href="/admin" className="rounded bg-neon-blue px-4 py-2 font-bold text-black hover:bg-white">
+                      Acessar administração
+                    </Link>
+                  )}
+                  <button onClick={handleLogout} className="px-3 py-2 text-neon-blue transition-colors hover:text-white">
+                    Sair
+                  </button>
+                </div>
               </div>
             )}
             {message && <p className="mt-4 text-sm text-neon-blue">{message}</p>}
           </div>
-          <div className="grid gap-6 md:grid-cols-2">
+          {user ? (
+            <div className="rounded-lg border border-neon-blue/40 bg-neon-blue/10 p-8">
+              <ShieldCheck className="mb-4 text-neon-blue" size={36} />
+              <h2 className="font-montserrat text-2xl font-bold uppercase text-white">Sessão ativa</h2>
+              <p className="mt-3 text-silver">Você já está autenticado. Use os atalhos ao lado ou o menu do site.</p>
+            </div>
+          ) : <div className="grid gap-6 md:grid-cols-2">
             <form
               action={handleLogin}
               className="rounded-lg border border-border bg-dark-blue p-6"
@@ -174,7 +191,7 @@ export default function LoginPage() {
                 Cadastrar
               </button>
             </form>
-          </div>
+          </div>}
         </div>
       </section>
     </SiteShell>
