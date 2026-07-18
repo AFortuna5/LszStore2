@@ -1,15 +1,35 @@
 import "server-only";
 
+import { Prisma } from "@prisma/client";
+import Stripe from "stripe";
+
 import { env } from "@/server/config/env";
 import { prisma } from "@/server/database/client";
-import { moneyToNumber } from "@/server/money";
+import { moneyToCents, moneyToNumber } from "@/server/money";
 import { changeInventory } from "@/server/services/inventory";
 
-export function getMercadoPagoReadiness() {
+type SessionAction = "sync" | "completed" | "succeeded" | "failed" | "expired";
+
+let stripeClient: Stripe | null = null;
+
+function getStripe() {
+  if (!env.stripeSecretKey) throw new Error("Stripe nao configurado");
+  stripeClient ??= new Stripe(env.stripeSecretKey);
+  return stripeClient;
+}
+
+export function getStripeReadiness() {
   const missing: string[] = [];
-  if (env.paymentProvider !== "mercadopago") missing.push("PAYMENT_PROVIDER");
-  if (!env.mercadoPagoToken) missing.push("MERCADO_PAGO_ACCESS_TOKEN");
-  if (!env.mercadoPagoWebhookSecret) missing.push("MERCADO_PAGO_WEBHOOK_SECRET");
+  if (env.paymentProvider !== "stripe") missing.push("PAYMENT_PROVIDER");
+  if (!env.stripeSecretKey) missing.push("STRIPE_SECRET_KEY");
+  if (!env.stripeWebhookSecret) missing.push("STRIPE_WEBHOOK_SECRET");
+  if (env.stripeSecretKey) {
+    const expectedPrefix = env.stripeLiveMode ? "sk_live_" : "sk_test_";
+    if (!env.stripeSecretKey.startsWith(expectedPrefix)) missing.push("STRIPE_KEY_MODE");
+  }
+  if (env.stripeWebhookSecret && !env.stripeWebhookSecret.startsWith("whsec_")) {
+    missing.push("STRIPE_WEBHOOK_SECRET_INVALID");
+  }
   if (!env.appUrl) missing.push("APP_URL");
   if (process.env.NODE_ENV === "production" && !env.appUrl.startsWith("https://")) {
     missing.push("APP_URL_HTTPS");
@@ -17,81 +37,261 @@ export function getMercadoPagoReadiness() {
   return { ready: missing.length === 0, missing };
 }
 
-export async function createPaymentPreference(orderId: string) {
-  const order = await prisma.order.findUnique({ where: { id: orderId }, include: { items: true } });
+function paymentIntentId(session: Stripe.Checkout.Session) {
+  return typeof session.payment_intent === "string"
+    ? session.payment_intent
+    : session.payment_intent?.id ?? null;
+}
+
+export async function createPaymentSession(orderId: string) {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { items: true },
+  });
   if (!order) throw new Error("Pedido nao encontrado");
-  const readiness = getMercadoPagoReadiness();
-  if (!readiness.ready || !env.mercadoPagoToken) throw new Error("Mercado Pago nao configurado");
+  if (!getStripeReadiness().ready) throw new Error("Stripe nao configurado");
   if (order.status !== "PENDING" || order.paymentStatus === "APPROVED") {
     throw new Error("Pedido nao esta disponivel para pagamento");
   }
 
-  const response = await fetch("https://api.mercadopago.com/checkout/preferences", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${env.mercadoPagoToken}`, "Content-Type": "application/json", "X-Idempotency-Key": order.id },
-    body: JSON.stringify({
-      items: [
-        ...order.items.map((item) => ({ id: item.productId, title: item.productName, quantity: item.quantity, currency_id: "BRL", unit_price: moneyToNumber(item.price) })),
-        ...(moneyToNumber(order.shippingCost) > 0 ? [{ id: "shipping", title: "Frete", quantity: 1, currency_id: "BRL", unit_price: moneyToNumber(order.shippingCost) }] : []),
-      ],
-      payer: { name: order.customerName, email: order.customerEmail },
-      external_reference: order.id,
-      back_urls: {
-        success: `${env.appUrl}/checkout/retorno?status=success`,
-        pending: `${env.appUrl}/checkout/retorno?status=pending`,
-        failure: `${env.appUrl}/checkout/retorno?status=failure`,
-      },
-      auto_return: "approved",
-      notification_url: `${env.appUrl}/api/payments/mercadopago/webhook`,
-    }),
+  const stripe = getStripe();
+  if (order.paymentSessionId) {
+    try {
+      const existing = await stripe.checkout.sessions.retrieve(order.paymentSessionId);
+      if (existing.status === "open" && existing.url) {
+        return { id: existing.id, url: existing.url };
+      }
+      if (existing.status === "complete") {
+        await applyStripeSession(existing, "sync");
+        throw new Error(existing.payment_status === "paid"
+          ? "Pagamento ja confirmado"
+          : "Pagamento em processamento");
+      }
+    } catch (error) {
+      if (error instanceof Error && ["Pagamento ja confirmado", "Pagamento em processamento"].includes(error.message)) {
+        throw error;
+      }
+      // Uma sessao removida ou expirada sera substituida abaixo.
+    }
+  }
+
+  const idempotencyKey = order.paymentSessionId
+    ? `${order.id}:after:${order.paymentSessionId}`
+    : `${order.id}:initial`;
+  const checkout = await stripe.checkout.sessions.create({
+    mode: "payment",
+    locale: "pt-BR",
+    client_reference_id: order.id,
+    customer_email: order.customerEmail,
+    success_url: `${env.appUrl}/checkout/retorno?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${env.appUrl}/minha-conta?checkout=cancelled`,
+    line_items: [
+      ...order.items.map((item) => ({
+        quantity: item.quantity,
+        price_data: {
+          currency: "brl",
+          unit_amount: moneyToCents(item.price),
+          product_data: {
+            name: item.variantLabel
+              ? `${item.productName} (${item.variantLabel})`
+              : item.productName,
+          },
+        },
+      })),
+      ...(moneyToNumber(order.shippingCost) > 0 ? [{
+        quantity: 1,
+        price_data: {
+          currency: "brl",
+          unit_amount: moneyToCents(order.shippingCost),
+          product_data: { name: "Frete" },
+        },
+      }] : []),
+    ],
+    metadata: { orderId: order.id, userId: order.userId },
+    payment_intent_data: { metadata: { orderId: order.id, userId: order.userId } },
+  }, { idempotencyKey });
+
+  if (!checkout.url) throw new Error("Stripe nao retornou uma URL de pagamento");
+  await prisma.order.update({
+    where: { id: order.id },
+    data: {
+      paymentProvider: "STRIPE",
+      paymentSessionId: checkout.id,
+      paymentId: paymentIntentId(checkout),
+      paymentUrl: checkout.url,
+      paymentStatus: checkout.payment_status === "paid" ? "APPROVED" : "PENDING",
+    },
   });
-  if (!response.ok) throw new Error("Nao foi possivel iniciar o pagamento");
-  const preference = await response.json() as { id: string; init_point?: string; sandbox_init_point?: string };
-  const paymentUrl = env.mercadoPagoSandbox ? preference.sandbox_init_point ?? preference.init_point : preference.init_point;
-  if (!paymentUrl) throw new Error("Mercado Pago nao retornou uma URL de pagamento");
-  await prisma.order.update({ where: { id: order.id }, data: { paymentProvider: "MERCADO_PAGO", paymentPreferenceId: preference.id, paymentUrl, paymentStatus: "PENDING" } });
-  return { id: preference.id, url: paymentUrl };
+  return { id: checkout.id, url: checkout.url };
 }
 
-export async function syncMercadoPagoPayment(paymentId: string) {
-  if (!env.mercadoPagoToken) throw new Error("Mercado Pago nao configurado");
-  const response = await fetch(`https://api.mercadopago.com/v1/payments/${encodeURIComponent(paymentId)}`, {
-    headers: { Authorization: `Bearer ${env.mercadoPagoToken}` }, cache: "no-store",
-  });
-  if (!response.ok) throw new Error("Pagamento nao encontrado");
-  const payment = await response.json() as { id: number; status: string; external_reference?: string; transaction_amount?: number; currency_id?: string; live_mode?: boolean };
-  if (!payment.external_reference) return null;
-  const orderId = payment.external_reference;
-  const paymentStatus = payment.status.toUpperCase();
+async function restoreInventory(
+  tx: Prisma.TransactionClient,
+  order: Prisma.OrderGetPayload<{ include: { items: true } }>,
+  type: string,
+  reason: string,
+  reference: string,
+) {
+  if (order.status === "CANCELLED") return;
+  for (const item of order.items) {
+    await changeInventory(tx, { productId: item.productId, variantId: item.variantId }, item.quantity, {
+      type,
+      actorName: "Stripe",
+      orderId: order.id,
+      customerName: order.customerName,
+      customerEmail: order.customerEmail,
+      reason,
+      reference,
+    });
+  }
+}
+
+async function applyStripeSession(session: Stripe.Checkout.Session, action: SessionAction) {
+  const orderId = session.client_reference_id ?? session.metadata?.orderId;
+  if (!orderId) throw new Error("Pedido da sessao Stripe nao informado");
+
   return prisma.$transaction(async (tx) => {
     const order = await tx.order.findUnique({ where: { id: orderId }, include: { items: true } });
-    if (!order) throw new Error("Pedido do pagamento nao encontrado");
-    const amountMatches = typeof payment.transaction_amount === "number" && Math.round(payment.transaction_amount * 100) === Math.round(moneyToNumber(order.total) * 100);
-    const modeMatches = env.mercadoPagoSandbox ? payment.live_mode === false : payment.live_mode === true;
-    if (!amountMatches || payment.currency_id !== "BRL" || !modeMatches) {
-      return tx.order.update({ where: { id: order.id }, data: { paymentId: String(payment.id), paymentStatus: "REVIEW_REQUIRED" } });
+    if (!order) throw new Error("Pedido da sessao Stripe nao encontrado");
+
+    const intentId = paymentIntentId(session);
+    const amountMatches = session.amount_total === moneyToCents(order.total);
+    const modeMatches = session.livemode === env.stripeLiveMode;
+    const currencyMatches = session.currency?.toLowerCase() === "brl";
+    if (!amountMatches || !modeMatches || !currencyMatches) {
+      return tx.order.update({
+        where: { id: order.id },
+        data: {
+          paymentProvider: "STRIPE",
+          paymentSessionId: session.id,
+          paymentId: intentId,
+          paymentStatus: "REVIEW_REQUIRED",
+        },
+      });
     }
-    const mustCancel = ["refunded", "charged_back"].includes(payment.status);
-    if (mustCancel && order.status !== "CANCELLED") {
-      for (const item of order.items) {
-        await changeInventory(tx, { productId: item.productId, variantId: item.variantId }, item.quantity, {
-          type: payment.status === "refunded" ? "REFUND" : "CHARGEBACK",
-          actorName: "Mercado Pago",
-          orderId: order.id,
-          customerName: order.customerName,
-          customerEmail: order.customerEmail,
-          reason: payment.status === "refunded" ? "Pagamento estornado" : "Pagamento contestado (chargeback)",
-          reference: `Pagamento ${payment.id}`,
+
+    const paid = session.payment_status === "paid" || session.payment_status === "no_payment_required";
+    if (paid && ["sync", "completed", "succeeded"].includes(action)) {
+      if (order.status === "CANCELLED" || (order.paymentStatus === "APPROVED" && order.paymentId && intentId && order.paymentId !== intentId)) {
+        return tx.order.update({
+          where: { id: order.id },
+          data: { paymentStatus: "REVIEW_REQUIRED", paymentId: intentId, paymentSessionId: session.id },
         });
       }
+      return tx.order.update({
+        where: { id: order.id },
+        data: {
+          status: "PAID",
+          paymentProvider: "STRIPE",
+          paymentSessionId: session.id,
+          paymentId: intentId,
+          paymentStatus: "APPROVED",
+          paymentUrl: null,
+        },
+      });
     }
+
+    const finalFailure = action === "failed" || action === "expired";
+    if (finalFailure && order.paymentSessionId === session.id && order.status === "PENDING") {
+      await restoreInventory(
+        tx,
+        order,
+        action === "expired" ? "PAYMENT_EXPIRED" : "PAYMENT_FAILED",
+        action === "expired" ? "Sessao de pagamento expirada" : "Pagamento nao concluido",
+        `Sessao Stripe ${session.id}`,
+      );
+      return tx.order.update({
+        where: { id: order.id },
+        data: {
+          status: "CANCELLED",
+          paymentStatus: action === "expired" ? "EXPIRED" : "FAILED",
+          paymentUrl: null,
+        },
+      });
+    }
+
+    if (session.status === "complete" && order.status === "PENDING") {
+      return tx.order.update({
+        where: { id: order.id },
+        data: {
+          paymentProvider: "STRIPE",
+          paymentSessionId: session.id,
+          paymentId: intentId,
+          paymentStatus: "PROCESSING",
+        },
+      });
+    }
+    return order;
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+}
+
+export async function syncStripeCheckoutSession(sessionId: string) {
+  if (!/^cs_(test_|live_)?[A-Za-z0-9_]+$/.test(sessionId)) {
+    throw new Error("Sessao Stripe invalida");
+  }
+  const session = await getStripe().checkout.sessions.retrieve(sessionId, {
+    expand: ["payment_intent"],
+  });
+  return applyStripeSession(session, "sync");
+}
+
+async function applyStripeReversal(
+  paymentIntent: string,
+  amount: number,
+  type: "REFUND" | "DISPUTE",
+  reference: string,
+) {
+  return prisma.$transaction(async (tx) => {
+    const order = await tx.order.findFirst({ where: { paymentId: paymentIntent }, include: { items: true } });
+    if (!order) return null;
+    if (amount !== moneyToCents(order.total)) {
+      return tx.order.update({ where: { id: order.id }, data: { paymentStatus: "REVIEW_REQUIRED" } });
+    }
+    await restoreInventory(
+      tx,
+      order,
+      type === "REFUND" ? "REFUND" : "CHARGEBACK",
+      type === "REFUND" ? "Pagamento estornado pela Stripe" : "Pagamento contestado na Stripe",
+      reference,
+    );
     return tx.order.update({
       where: { id: order.id },
       data: {
-        paymentId: String(payment.id), paymentStatus,
-        ...(payment.status === "approved" && order.status !== "CANCELLED" ? { status: "PAID" } : {}),
-        ...(mustCancel ? { status: "CANCELLED" } : {}),
+        status: "CANCELLED",
+        paymentStatus: type === "REFUND" ? "REFUNDED" : "DISPUTED",
       },
     });
-  });
+  }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+}
+
+export function constructStripeEvent(payload: string, signature: string) {
+  if (!env.stripeWebhookSecret) throw new Error("Webhook Stripe nao configurado");
+  return getStripe().webhooks.constructEvent(payload, signature, env.stripeWebhookSecret, 300);
+}
+
+export async function processStripeEvent(event: Stripe.Event) {
+  switch (event.type) {
+    case "checkout.session.completed":
+      return applyStripeSession(event.data.object as Stripe.Checkout.Session, "completed");
+    case "checkout.session.async_payment_succeeded":
+      return applyStripeSession(event.data.object as Stripe.Checkout.Session, "succeeded");
+    case "checkout.session.async_payment_failed":
+      return applyStripeSession(event.data.object as Stripe.Checkout.Session, "failed");
+    case "checkout.session.expired":
+      return applyStripeSession(event.data.object as Stripe.Checkout.Session, "expired");
+    case "charge.refunded": {
+      const charge = event.data.object as Stripe.Charge;
+      const intent = typeof charge.payment_intent === "string" ? charge.payment_intent : charge.payment_intent?.id;
+      if (!intent || charge.amount_refunded <= 0) return null;
+      return applyStripeReversal(intent, charge.amount_refunded, "REFUND", `Charge Stripe ${charge.id}`);
+    }
+    case "charge.dispute.created": {
+      const dispute = event.data.object as Stripe.Dispute;
+      const intent = typeof dispute.payment_intent === "string" ? dispute.payment_intent : dispute.payment_intent?.id;
+      if (!intent) return null;
+      return applyStripeReversal(intent, dispute.amount, "DISPUTE", `Disputa Stripe ${dispute.id}`);
+    }
+    default:
+      return null;
+  }
 }

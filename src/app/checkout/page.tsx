@@ -105,7 +105,7 @@ export default function CheckoutPage() {
           state: formData.get("state"),
           complement: formData.get("complement"),
         },
-        paymentMethod: "MERCADO_PAGO",
+        paymentMethod: "STRIPE",
         shippingServiceId: selectedQuote.id,
       }),
     });
@@ -203,7 +203,7 @@ export default function CheckoutPage() {
                   ))}
                 </div>
               </div>
-              <div className="rounded border border-border bg-black p-4 text-sm text-silver"><strong className="text-white">Pagamento seguro pelo Mercado Pago</strong><p className="mt-1">Pix, cartao e boleto sao escolhidos no ambiente protegido do provedor.</p></div>
+              <div className="rounded border border-border bg-black p-4 text-sm text-silver"><strong className="text-white">Pagamento seguro pela Stripe</strong><p className="mt-1">Pix, cartao e boleto sao escolhidos no ambiente protegido do provedor.</p></div>
               <button
                 type="submit"
                 disabled={loading || cartProducts.length === 0}

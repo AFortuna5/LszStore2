@@ -2,14 +2,12 @@ import Link from "next/link";
 
 import SiteShell from "@/templates/layout/SiteShell";
 import { readSessionFromCookies } from "@/server/auth/session";
-import { prisma } from "@/server/database/client";
-import { getMercadoPagoReadiness, syncMercadoPagoPayment } from "@/server/services/payment";
+import { getStripeReadiness, syncStripeCheckoutSession } from "@/server/services/payment";
 
 export const dynamic = "force-dynamic";
 
 type ReturnParams = {
-  payment_id?: string;
-  external_reference?: string;
+  session_id?: string;
 };
 
 export default async function PaymentReturnPage({ searchParams }: { searchParams: Promise<ReturnParams> }) {
@@ -17,16 +15,12 @@ export default async function PaymentReturnPage({ searchParams }: { searchParams
   const session = await readSessionFromCookies();
   let order = null;
 
-  if (params.payment_id && getMercadoPagoReadiness().ready) {
+  if (params.session_id && getStripeReadiness().ready) {
     try {
-      order = await syncMercadoPagoPayment(params.payment_id);
+      order = await syncStripeCheckoutSession(params.session_id);
     } catch {
       // A confirmacao definitiva continuara sendo processada pelo webhook.
     }
-  }
-
-  if (!order && params.external_reference) {
-    order = await prisma.order.findUnique({ where: { id: params.external_reference } });
   }
 
   if (order && (!session || (session.role !== "ADMIN" && order.userId !== session.id))) {
@@ -35,12 +29,12 @@ export default async function PaymentReturnPage({ searchParams }: { searchParams
 
   const state = order?.paymentStatus === "APPROVED" || order?.status === "PAID"
     ? "success"
-    : order?.status === "CANCELLED" || ["REJECTED", "REFUNDED", "CHARGED_BACK"].includes(order?.paymentStatus ?? "")
+    : order?.status === "CANCELLED" || ["FAILED", "EXPIRED", "REFUNDED", "DISPUTED"].includes(order?.paymentStatus ?? "")
       ? "failure"
       : "pending";
   const messages = {
-    success: ["Pagamento confirmado", "O Mercado Pago confirmou o pagamento e o pedido ja aparece como pago."],
-    pending: ["Confirmacao em andamento", "Estamos consultando o Mercado Pago. A situacao definitiva aparecera em sua conta."],
+    success: ["Pagamento confirmado", "A Stripe confirmou o pagamento e o pedido ja aparece como pago."],
+    pending: ["Confirmacao em andamento", "Estamos consultando a Stripe. A situacao definitiva aparecera em sua conta."],
     failure: ["Pagamento nao concluido", "O pagamento nao foi aprovado. Consulte o pedido para tentar novamente."],
   } as const;
   const content = messages[state];

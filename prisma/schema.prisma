@@ -111,7 +111,7 @@ model Order {
   checkoutKey         String?             @unique
   paymentMethod       String
   paymentProvider     String              @default("MANUAL")
-  paymentPreferenceId String?
+  paymentSessionId    String?             @unique
   paymentId           String?
   paymentStatus       String              @default("PENDING")
   paymentUrl          String?

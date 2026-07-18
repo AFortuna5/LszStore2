@@ -93,9 +93,9 @@ Copie `.env.example` para `.env` e preencha as credenciais. Sem credenciais, o p
 
 - **PostgreSQL:** configure `DATABASE_URL` para a aplicacao e `DIRECT_URL` para migrations. Em producao, aplique o schema com `npm run db:deploy`; nunca use `prisma db push` nem `migrate dev` no banco produtivo.
 
-- **Mercado Pago:** defina `PAYMENT_PROVIDER=mercadopago`, `MERCADO_PAGO_ACCESS_TOKEN`, `MERCADO_PAGO_WEBHOOK_SECRET` e cadastre `https://SEU-DOMINIO/api/payments/mercadopago/webhook` como webhook do evento de pagamentos.
-- Para testes, use credenciais de teste e `MERCADO_PAGO_SANDBOX=true`. Para cobrar de verdade, use as credenciais de producao, `MERCADO_PAGO_SANDBOX=false` e um `APP_URL` publico com HTTPS.
-- Guarde o access token e a assinatura secreta apenas nas variaveis protegidas da hospedagem. Nunca envie esses valores ao navegador nem os versione no Git.
+- **Stripe:** defina `PAYMENT_PROVIDER=stripe`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` e cadastre `https://SEU-DOMINIO/api/payments/stripe/webhook` para os eventos `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.refunded` e `charge.dispute.created`.
+- Para testes, use uma chave `sk_test_...` e `STRIPE_LIVE_MODE=false`. Para cobrar de verdade, use uma chave `sk_live_...`, `STRIPE_LIVE_MODE=true` e um `APP_URL` publico com HTTPS.
+- Guarde a chave secreta e a assinatura `whsec_...` apenas nas variaveis protegidas da hospedagem. Nunca envie esses valores ao navegador nem os versione no Git.
 - Antes de liberar a loja, conclua uma compra de teste e confirme que o pedido muda de `PENDING` para `PAID` depois que o webhook for recebido.
 - **Melhor Envio:** configure o CEP de origem e `MELHOR_ENVIO_TOKEN`. Use sandbox durante a homologação.
 - **Resend:** configure `RESEND_API_KEY`, valide o domínio e altere `EMAIL_FROM`.
@@ -107,7 +107,7 @@ Antes de publicar, troque a senha inicial do administrador, revise os textos jur
 ## Funcionalidades operacionais
 
 - cálculo de frete no servidor e preenchimento de endereço por CEP;
-- Checkout Pro e sincronização de pagamento por webhook;
+- Stripe Checkout e sincronização de pagamento por webhook;
 - painel de pedidos, status, cancelamento, estoque e rastreio;
 - escolha de variações e estoque por SKU;
 - recuperação de senha e limitação de tentativas;

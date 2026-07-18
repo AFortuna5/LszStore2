@@ -154,7 +154,7 @@ export async function createOrderFromCart(
         total: moneySum([subtotal, shippingCost]),
         checkoutKey: checkout?.checkoutKey,
         paymentMethod: checkout?.paymentMethod ?? "PENDING",
-        paymentProvider: checkout?.paymentMethod === "MERCADO_PAGO" ? "MERCADO_PAGO" : "MANUAL",
+        paymentProvider: checkout?.paymentMethod === "STRIPE" ? "STRIPE" : "MANUAL",
         shippingService: checkout?.shippingService,
         shippingServiceId: checkout?.shippingServiceId,
         shippingDeadline: checkout?.shippingDeadline,

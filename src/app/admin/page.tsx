@@ -5,7 +5,7 @@ import SiteShell from "@/templates/layout/SiteShell";
 import { readSessionFromCookies } from "@/server/auth/session";
 import { env } from "@/server/config/env";
 import { prisma } from "@/server/database/client";
-import { getMercadoPagoReadiness } from "@/server/services/payment";
+import { getStripeReadiness } from "@/server/services/payment";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +22,7 @@ export default async function AdminPage() {
     prisma.order.count(),
     prisma.category.count(),
   ]);
-  const payment = getMercadoPagoReadiness();
+  const payment = getStripeReadiness();
 
   return (
     <SiteShell>
@@ -51,12 +51,12 @@ export default async function AdminPage() {
           <div className={`mt-8 rounded-lg border p-6 ${payment.ready ? "border-emerald-500/50 bg-emerald-500/10" : "border-amber-500/50 bg-amber-500/10"}`}>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-bold uppercase tracking-wide text-white">Mercado Pago</p>
-                <p className="mt-2 text-sm text-silver">{payment.ready ? `Configurado em modo ${env.mercadoPagoSandbox ? "teste" : "producao"}.` : "Configuracao pendente. O checkout permanece bloqueado para evitar pedidos sem cobranca."}</p>
+                <p className="text-sm font-bold uppercase tracking-wide text-white">Stripe</p>
+                <p className="mt-2 text-sm text-silver">{payment.ready ? `Configurado em modo ${env.stripeLiveMode ? "producao" : "teste"}.` : "Configuracao pendente. O checkout permanece bloqueado para evitar pedidos sem cobranca."}</p>
               </div>
               <span className={`rounded px-3 py-2 text-xs font-bold uppercase ${payment.ready ? "bg-emerald-400 text-black" : "bg-amber-400 text-black"}`}>{payment.ready ? "Pronto" : "Pendente"}</span>
             </div>
-            <p className="mt-3 break-all text-xs text-silver">Webhook: {env.appUrl}/api/payments/mercadopago/webhook</p>
+            <p className="mt-3 break-all text-xs text-silver">Webhook: {env.appUrl}/api/payments/stripe/webhook</p>
           </div>
 
           <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-5">

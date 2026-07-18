@@ -8,6 +8,10 @@ export function moneyToNumber(value: MoneyValue) {
   return Math.round((number + Number.EPSILON) * 100) / 100;
 }
 
+export function moneyToCents(value: MoneyValue) {
+  return Math.round(moneyToNumber(value) * 100);
+}
+
 export function moneySum(values: MoneyValue[]) {
   const cents = values.reduce<number>(
     (sum, value) => sum + Math.round(moneyToNumber(value) * 100),

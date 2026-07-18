@@ -102,7 +102,7 @@ export default function Footer() {
           <p className="font-inter text-xs text-silver text-center md:text-left">
             &copy; {new Date().getFullYear()} LSZ Store. Todos os direitos reservados.
           </p>
-          <p className="text-xs font-bold uppercase tracking-wider text-silver">Pix · Cartao · Boleto via Mercado Pago</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-silver">Pix · Cartao · Boleto via Stripe</p>
         </div>
       </div>
     </footer>

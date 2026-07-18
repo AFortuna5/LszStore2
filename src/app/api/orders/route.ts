@@ -11,7 +11,7 @@ import { readSessionFromRequest } from "@/server/auth/session";
 import { createOrderFromCart, orderInclude, serializeOrder } from "@/server/services/orders";
 import { prisma } from "@/server/database/client";
 import { getShippingQuotes } from "@/server/services/shipping";
-import { createPaymentPreference, getMercadoPagoReadiness } from "@/server/services/payment";
+import { createPaymentSession, getStripeReadiness } from "@/server/services/payment";
 import { escapeHtml, sendEmail } from "@/server/services/email";
 
 async function existingCheckoutResponse(checkoutKey: string, userId: string) {
@@ -26,7 +26,7 @@ async function existingCheckoutResponse(checkoutKey: string, userId: string) {
 
   let paymentUrl = order.paymentUrl ?? undefined;
   if (!paymentUrl && order.status === "PENDING") {
-    paymentUrl = (await createPaymentPreference(order.id)).url;
+    paymentUrl = (await createPaymentSession(order.id)).url;
   }
   return NextResponse.json({ order: serializeOrder(order), paymentUrl });
 }
@@ -98,10 +98,10 @@ export async function POST(req: Request) {
     if (!isNonEmptyString(paymentMethod)) {
       return jsonError("Forma de pagamento obrigatoria");
     }
-    if (paymentMethod.trim().toUpperCase() !== "MERCADO_PAGO") {
+    if (paymentMethod.trim().toUpperCase() !== "STRIPE") {
       return jsonError("Forma de pagamento invalida");
     }
-    if (!getMercadoPagoReadiness().ready) {
+    if (!getStripeReadiness().ready) {
       return jsonError("Pagamento temporariamente indisponivel", 503);
     }
 
@@ -172,7 +172,7 @@ export async function POST(req: Request) {
     }
     let paymentUrl: string | undefined;
     try {
-      const payment = await createPaymentPreference(order.id);
+      const payment = await createPaymentSession(order.id);
       paymentUrl = payment.url;
     } catch (paymentError) {
       console.error(paymentError);

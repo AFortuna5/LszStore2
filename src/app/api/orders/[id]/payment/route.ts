@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { readSessionFromRequest } from "@/server/auth/session";
 import { prisma } from "@/server/database/client";
 import { jsonError } from "@/server/http/api";
-import { createPaymentPreference, getMercadoPagoReadiness } from "@/server/services/payment";
+import { createPaymentSession, getStripeReadiness } from "@/server/services/payment";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -21,11 +21,11 @@ export async function POST(req: Request, context: RouteContext) {
     if (order.status !== "PENDING" || order.paymentStatus === "APPROVED") {
       return jsonError("Este pedido nao esta disponivel para pagamento", 409);
     }
-    if (!getMercadoPagoReadiness().ready) {
+    if (!getStripeReadiness().ready) {
       return jsonError("Pagamento temporariamente indisponivel", 503);
     }
 
-    const payment = await createPaymentPreference(order.id);
+    const payment = await createPaymentSession(order.id);
     return NextResponse.json({ paymentUrl: payment.url });
   } catch (error) {
     console.error(error);
