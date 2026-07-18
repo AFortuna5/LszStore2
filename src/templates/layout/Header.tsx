@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Search, ShieldCheck, ShoppingCart, User, Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
+import Wordmark from "@/templates/brand/Wordmark";
 
 type SessionUser = {
   id: string;
@@ -118,8 +119,8 @@ export default function Header() {
 
           {/* Logo */}
           {isHome ? (
-            <Link href="/" className="absolute left-1/2 -translate-x-1/2 font-montserrat text-xl font-black tracking-[-0.08em] text-black lg:static lg:translate-x-0 lg:text-2xl" aria-label="LSZ Store">
-              LSZ <span className="text-neon-blue">STORE.</span>
+            <Link href="/" className="absolute left-1/2 -translate-x-1/2 lg:static lg:translate-x-0" aria-label="LSZ Store">
+              <Wordmark className="text-xl lg:text-2xl" />
             </Link>
           ) : (
             <Link href="/" className="relative block h-14 w-36 flex-shrink-0 md:h-16 md:w-44" aria-label="LSZ Store">

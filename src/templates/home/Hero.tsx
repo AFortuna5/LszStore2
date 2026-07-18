@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import type { StorefrontProduct } from "@/shared/storefront";
+import Wordmark from "@/templates/brand/Wordmark";
 
 const fallbackImage = "https://images.unsplash.com/photo-1550246140-5119ae4790b8?auto=format&fit=crop&w=1800&q=88";
 
@@ -57,15 +58,20 @@ export default function Hero({ products }: { products: StorefrontProduct[] }) {
     <section className="relative min-h-[690px] overflow-hidden bg-[#f4f4f1] pt-28 lg:min-h-[760px]">
       <div className="mx-auto grid min-h-[578px] max-w-[1600px] lg:grid-cols-[44%_56%] lg:min-h-[648px]">
         <div className="relative z-10 flex flex-col justify-center px-5 py-14 sm:px-10 lg:px-14 xl:px-20">
-          <p className="mb-5 flex items-center gap-3 text-xs font-bold uppercase tracking-[0.24em] text-neutral-600">
-            <span className="h-px w-10 bg-neon-blue" /> Nova seleção LSZ
-          </p>
-          <h1 className="max-w-2xl font-montserrat text-[clamp(3.3rem,7vw,7.7rem)] font-black uppercase leading-[0.82] tracking-[-0.085em] text-black">
-            Vista sua
-            <span className="block text-neon-blue">atitude.</span>
+          <h1 className="max-w-2xl uppercase text-black">
+            <span className="block font-montserrat text-[clamp(2rem,3vw,3.3rem)] font-light leading-none tracking-[-0.055em] text-neutral-800">
+              Seja muito
+            </span>
+            <span className="mt-1 block font-montserrat text-[clamp(3.5rem,4.7vw,5.4rem)] font-black italic leading-[0.82] tracking-[-0.085em]">
+              Bem-vindo
+            </span>
+            <span className="mt-3 flex flex-wrap items-baseline gap-x-3 font-montserrat text-[clamp(2rem,3vw,3.2rem)] font-medium leading-none tracking-[-0.06em] text-neutral-800">
+              à <Wordmark className="text-[clamp(2rem,3vw,3.2rem)]" />
+            </span>
           </h1>
-          <p className="mt-7 max-w-md font-poppins text-sm leading-7 text-neutral-600 sm:text-base">
-            Peças e produtos escolhidos para quem transforma estilo em identidade. Novidades, exclusividade e entrega para todo o Brasil.
+          <p className="mt-7 max-w-lg font-poppins text-sm leading-7 text-neutral-600 sm:text-base">
+            Trabalhamos com <strong className="block font-bold italic text-black sm:inline">produtos 100% originais</strong>{" "}
+            <span className="block sm:inline">e uma <strong className="block font-bold italic text-black sm:inline">seleção feita especialmente para você.</strong></span>
           </p>
           <div className="mt-9 flex flex-wrap items-center gap-5">
             <Link href="/produtos" className="inline-flex items-center gap-3 bg-black px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-white transition-colors hover:bg-neon-blue hover:text-black sm:px-7">
@@ -87,7 +93,7 @@ export default function Hero({ products }: { products: StorefrontProduct[] }) {
               transition={{ duration: 0.65 }}
               className="absolute inset-0"
             >
-              <Image src={currentSlide.image} alt="" fill className="scale-110 object-cover opacity-15 blur-2xl" sizes="(min-width: 1024px) 56vw, 100vw" />
+              <Image src={currentSlide.image} alt="" fill loading="eager" className="scale-110 object-cover opacity-15 blur-2xl" sizes="(min-width: 1024px) 56vw, 100vw" />
               <Link href={currentSlide.href} aria-label={`Ver ${currentSlide.name}`} className="absolute inset-0">
                 <Image
                   src={currentSlide.image}
