@@ -2,6 +2,7 @@ import "server-only";
 
 import { env } from "@/server/config/env";
 import { prisma } from "@/server/database/client";
+import { moneyToNumber } from "@/server/money";
 import { changeInventory } from "@/server/services/inventory";
 
 export function getMercadoPagoReadiness() {
@@ -30,8 +31,8 @@ export async function createPaymentPreference(orderId: string) {
     headers: { Authorization: `Bearer ${env.mercadoPagoToken}`, "Content-Type": "application/json", "X-Idempotency-Key": order.id },
     body: JSON.stringify({
       items: [
-        ...order.items.map((item) => ({ id: item.productId, title: item.productName, quantity: item.quantity, currency_id: "BRL", unit_price: item.price })),
-        ...(order.shippingCost > 0 ? [{ id: "shipping", title: "Frete", quantity: 1, currency_id: "BRL", unit_price: order.shippingCost }] : []),
+        ...order.items.map((item) => ({ id: item.productId, title: item.productName, quantity: item.quantity, currency_id: "BRL", unit_price: moneyToNumber(item.price) })),
+        ...(moneyToNumber(order.shippingCost) > 0 ? [{ id: "shipping", title: "Frete", quantity: 1, currency_id: "BRL", unit_price: moneyToNumber(order.shippingCost) }] : []),
       ],
       payer: { name: order.customerName, email: order.customerEmail },
       external_reference: order.id,
@@ -65,7 +66,7 @@ export async function syncMercadoPagoPayment(paymentId: string) {
   return prisma.$transaction(async (tx) => {
     const order = await tx.order.findUnique({ where: { id: orderId }, include: { items: true } });
     if (!order) throw new Error("Pedido do pagamento nao encontrado");
-    const amountMatches = typeof payment.transaction_amount === "number" && Math.abs(payment.transaction_amount - order.total) < 0.01;
+    const amountMatches = typeof payment.transaction_amount === "number" && Math.round(payment.transaction_amount * 100) === Math.round(moneyToNumber(order.total) * 100);
     const modeMatches = env.mercadoPagoSandbox ? payment.live_mode === false : payment.live_mode === true;
     if (!amountMatches || payment.currency_id !== "BRL" || !modeMatches) {
       return tx.order.update({ where: { id: order.id }, data: { paymentId: String(payment.id), paymentStatus: "REVIEW_REQUIRED" } });

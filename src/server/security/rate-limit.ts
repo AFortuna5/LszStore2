@@ -1,7 +1,8 @@
 import "server-only";
 
-type Entry = { count: number; resetAt: number };
-const buckets = new Map<string, Entry>();
+import { prisma } from "@/server/database/client";
+
+type BucketRow = { count: number; resetAt: Date };
 
 export function getClientIp(req: Request) {
   return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
@@ -9,16 +10,32 @@ export function getClientIp(req: Request) {
     ?? "local";
 }
 
-export function rateLimit(key: string, limit = 10, windowMs = 60_000) {
-  const now = Date.now();
-  const current = buckets.get(key);
-  if (!current || current.resetAt <= now) {
-    buckets.set(key, { count: 1, resetAt: now + windowMs });
-    return { allowed: true, retryAfter: 0 };
+export async function rateLimit(key: string, limit = 10, windowMs = 60_000) {
+  const resetAt = new Date(Date.now() + windowMs);
+  const rows = await prisma.$queryRaw<BucketRow[]>`
+    INSERT INTO "RateLimitBucket" ("key", "count", "resetAt", "updatedAt")
+    VALUES (${key}, 1, ${resetAt}, NOW())
+    ON CONFLICT ("key") DO UPDATE SET
+      "count" = CASE
+        WHEN "RateLimitBucket"."resetAt" <= NOW() THEN 1
+        ELSE "RateLimitBucket"."count" + 1
+      END,
+      "resetAt" = CASE
+        WHEN "RateLimitBucket"."resetAt" <= NOW() THEN ${resetAt}
+        ELSE "RateLimitBucket"."resetAt"
+      END,
+      "updatedAt" = NOW()
+    RETURNING "count", "resetAt"
+  `;
+  const bucket = rows[0];
+  if (!bucket) throw new Error("RATE_LIMIT_UNAVAILABLE");
+
+  if (Math.random() < 0.01) {
+    void prisma.rateLimitBucket.deleteMany({ where: { resetAt: { lt: new Date() } } }).catch(() => undefined);
   }
-  current.count += 1;
+
   return {
-    allowed: current.count <= limit,
-    retryAfter: Math.max(1, Math.ceil((current.resetAt - now) / 1000)),
+    allowed: bucket.count <= limit,
+    retryAfter: Math.max(1, Math.ceil((bucket.resetAt.getTime() - Date.now()) / 1000)),
   };
 }

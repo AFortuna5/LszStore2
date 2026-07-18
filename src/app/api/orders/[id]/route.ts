@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { isNonEmptyString, isRecord, jsonError, readJson } from "@/server/http/api";
 import { readSessionFromRequest } from "@/server/auth/session";
-import { orderInclude } from "@/server/services/orders";
+import { orderInclude, serializeOrder } from "@/server/services/orders";
 import { prisma } from "@/server/database/client";
 import { escapeHtml, sendEmail } from "@/server/services/email";
 import { changeInventory } from "@/server/services/inventory";
@@ -38,7 +38,7 @@ export async function GET(_req: Request, context: RouteContext) {
       return jsonError("Nao autorizado", 401);
     }
 
-    return NextResponse.json(order);
+    return NextResponse.json(serializeOrder(order));
   } catch (error) {
     console.error(error);
     return jsonError("Erro ao buscar o pedido", 500);
@@ -100,7 +100,7 @@ export async function PATCH(req: Request, context: RouteContext) {
       html: `<h1>Pedido atualizado</h1><p>Ola, ${escapeHtml(order.customerName)}.</p><p>Status: <strong>${escapeHtml(order.status)}</strong>.</p>${order.trackingCode ? `<p>Rastreio: <strong>${escapeHtml(order.trackingCode)}</strong></p>` : ""}`,
     }).catch(console.error);
 
-    return NextResponse.json(order);
+    return NextResponse.json(serializeOrder(order));
   } catch (error) {
     console.error(error);
     if (String(error).includes("ORDER_NOT_FOUND")) return jsonError("Pedido nao encontrado", 404);

@@ -45,15 +45,17 @@ export type StorefrontCategory = {
   productCount: number;
 };
 
+type NumericValue = number | string | { toString(): string };
+
 type ProductPayload = {
-  id: string; slug: string; name: string; description: string; price: number;
-  promoPrice: number | null; brand: string | null; collection: string; rating: number;
+  id: string; slug: string; name: string; description: string; price: NumericValue;
+  promoPrice: NumericValue | null; brand: string | null; collection: string; rating: number;
   inventory: number; images: string; details: string; isFeatured: boolean;
   isPremium: boolean; isNew: boolean; weight: number; width: number; height: number; length: number;
   category: { name: string; slug: string };
   variants: Array<{
     id: string; sku: string; label: string; size: string | null; color: string | null;
-    inventory: number; image: string | null; priceOverride: number | null; isDefault: boolean;
+    inventory: number; image: string | null; priceOverride: NumericValue | null; isDefault: boolean;
   }>;
 };
 
@@ -80,10 +82,11 @@ export function parseTextList(value: string) {
 
 export function toStorefrontProduct(product: ProductPayload): StorefrontProduct {
   const images = parseImageList(product.images);
-  const promoPrice = product.promoPrice ?? null;
+  const price = Number(product.price);
+  const promoPrice = product.promoPrice === null ? null : Number(product.promoPrice);
   const discount =
-    promoPrice && promoPrice < product.price
-      ? `${Math.round(100 - (promoPrice / product.price) * 100)}% OFF`
+    promoPrice && promoPrice < price
+      ? `${Math.round(100 - (promoPrice / price) * 100)}% OFF`
       : null;
 
   return {
@@ -95,7 +98,7 @@ export function toStorefrontProduct(product: ProductPayload): StorefrontProduct 
     categorySlug: product.category.slug,
     collection: product.collection,
     rating: product.rating,
-    price: product.price,
+    price,
     promoPrice,
     discount,
     image: images[0] ?? "/placeholder-product.png",
@@ -118,8 +121,8 @@ export function toStorefrontProduct(product: ProductPayload): StorefrontProduct 
       color: variant.color,
       inventory: variant.inventory,
       image: variant.image,
-      price: variant.priceOverride ?? promoPrice ?? product.price,
-      priceOverride: variant.priceOverride,
+      price: variant.priceOverride === null ? promoPrice ?? price : Number(variant.priceOverride),
+      priceOverride: variant.priceOverride === null ? null : Number(variant.priceOverride),
       isDefault: variant.isDefault,
     })),
   };

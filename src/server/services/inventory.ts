@@ -44,9 +44,17 @@ export async function changeInventory(
   if (newStock < 0) throw new Error("INVENTORY_INSUFFICIENT");
 
   if (variant) {
-    await tx.productVariant.update({ where: { id: variant.id }, data: { inventory: newStock } });
+    const updated = await tx.productVariant.updateMany({
+      where: { id: variant.id, inventory: previousStock },
+      data: { inventory: newStock },
+    });
+    if (updated.count !== 1) throw new Error("INVENTORY_CONFLICT");
   } else {
-    await tx.product.update({ where: { id: product.id }, data: { inventory: newStock } });
+    const updated = await tx.product.updateMany({
+      where: { id: product.id, inventory: previousStock },
+      data: { inventory: newStock },
+    });
+    if (updated.count !== 1) throw new Error("INVENTORY_CONFLICT");
   }
 
   return tx.inventoryMovement.create({

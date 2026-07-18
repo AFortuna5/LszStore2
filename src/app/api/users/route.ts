@@ -35,7 +35,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    if (!rateLimit(`register:${getClientIp(req)}`, 5, 15 * 60_000).allowed) return jsonError("Muitas tentativas. Aguarde alguns minutos.", 429);
+    if (!(await rateLimit(`register:${getClientIp(req)}`, 5, 15 * 60_000)).allowed) return jsonError("Muitas tentativas. Aguarde alguns minutos.", 429);
     const body = await readJson(req);
 
     if (!isRecord(body)) {
@@ -90,7 +90,7 @@ export async function POST(req: Request) {
 
 export async function PATCH(req: Request) {
   try {
-    if (!rateLimit(`login:${getClientIp(req)}`, 8, 15 * 60_000).allowed) return jsonError("Muitas tentativas de login. Aguarde alguns minutos.", 429);
+    if (!(await rateLimit(`login:${getClientIp(req)}`, 8, 15 * 60_000)).allowed) return jsonError("Muitas tentativas de login. Aguarde alguns minutos.", 429);
     const body = await readJson(req);
 
     if (!isRecord(body)) {

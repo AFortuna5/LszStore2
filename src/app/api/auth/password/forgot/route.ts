@@ -6,7 +6,7 @@ import { sendEmail } from "@/server/services/email";
 import { getClientIp, rateLimit } from "@/server/security/rate-limit";
 
 export async function POST(req: Request) {
-  if (!rateLimit(`forgot:${getClientIp(req)}`, 5, 30 * 60_000).allowed) return Response.json({ ok: true });
+  if (!(await rateLimit(`forgot:${getClientIp(req)}`, 5, 30 * 60_000)).allowed) return Response.json({ ok: true });
   const body = await readJson(req);
   if (!isRecord(body) || !isNonEmptyString(body.email)) return Response.json({ ok: true });
   const user = await prisma.user.findUnique({ where: { email: body.email.trim().toLowerCase() } });

@@ -5,7 +5,7 @@ import { env } from "@/server/config/env";
 import { getClientIp, rateLimit } from "@/server/security/rate-limit";
 
 export async function POST(req: Request) {
-  const limit = rateLimit(`contact:${getClientIp(req)}`, 5, 10 * 60_000);
+  const limit = await rateLimit(`contact:${getClientIp(req)}`, 5, 10 * 60_000);
   if (!limit.allowed) return jsonError("Muitas mensagens. Tente novamente mais tarde.", 429);
   const body = await readJson(req);
   if (!isRecord(body)) return jsonError("Dados invalidos");

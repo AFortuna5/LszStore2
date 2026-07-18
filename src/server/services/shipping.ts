@@ -2,6 +2,7 @@ import "server-only";
 
 import { env } from "@/server/config/env";
 import { prisma } from "@/server/database/client";
+import { moneyToNumber } from "@/server/money";
 
 export type ShippingCartItem = { productId: string; variantId?: string | null; quantity: number };
 export type ShippingQuote = { id: string; name: string; company: string; price: number; deliveryDays: number };
@@ -17,7 +18,7 @@ export async function getShippingQuotes(items: ShippingCartItem[], destinationZi
   const subtotal = items.reduce((sum, item) => {
     const product = byId.get(item.productId)!;
     const variant = product.variants.find((entry) => entry.id === item.variantId);
-    return sum + (variant?.priceOverride ?? product.promoPrice ?? product.price) * item.quantity;
+    return sum + moneyToNumber(variant?.priceOverride ?? product.promoPrice ?? product.price) * item.quantity;
   }, 0);
 
   if (subtotal >= env.freeShippingFrom) {
@@ -40,7 +41,7 @@ export async function getShippingQuotes(items: ShippingCartItem[], destinationZi
         const product = byId.get(item.productId)!;
         return {
           id: product.id, width: product.width, height: product.height, length: product.length,
-          weight: product.weight, insurance_value: product.promoPrice ?? product.price, quantity: item.quantity,
+          weight: product.weight, insurance_value: moneyToNumber(product.promoPrice ?? product.price), quantity: item.quantity,
         };
       }),
     }),

@@ -8,11 +8,28 @@ import {
   toPositiveInt,
 } from "@/server/http/api";
 import { readSessionFromRequest } from "@/server/auth/session";
-import { createOrderFromCart, orderInclude } from "@/server/services/orders";
+import { createOrderFromCart, orderInclude, serializeOrder } from "@/server/services/orders";
 import { prisma } from "@/server/database/client";
 import { getShippingQuotes } from "@/server/services/shipping";
 import { createPaymentPreference, getMercadoPagoReadiness } from "@/server/services/payment";
 import { escapeHtml, sendEmail } from "@/server/services/email";
+
+async function existingCheckoutResponse(checkoutKey: string, userId: string) {
+  const order = await prisma.order.findUnique({
+    where: { checkoutKey },
+    include: orderInclude,
+  });
+  if (!order) return null;
+  if (order.userId !== userId) {
+    return jsonError("Identificador do checkout invalido", 409);
+  }
+
+  let paymentUrl = order.paymentUrl ?? undefined;
+  if (!paymentUrl && order.status === "PENDING") {
+    paymentUrl = (await createPaymentPreference(order.id)).url;
+  }
+  return NextResponse.json({ order: serializeOrder(order), paymentUrl });
+}
 
 export async function GET(req: Request) {
   try {
@@ -44,7 +61,7 @@ export async function GET(req: Request) {
       take: limit,
     });
 
-    return NextResponse.json(orders);
+    return NextResponse.json(orders.map(serializeOrder));
   } catch (error) {
     console.error(error);
     return jsonError("Erro ao buscar os pedidos", 500);
@@ -88,6 +105,14 @@ export async function POST(req: Request) {
       return jsonError("Pagamento temporariamente indisponivel", 503);
     }
 
+    const checkoutKey = req.headers.get("idempotency-key")?.trim();
+    if (!checkoutKey || !/^[A-Za-z0-9_-]{16,128}$/.test(checkoutKey)) {
+      return jsonError("Identificador do checkout invalido");
+    }
+
+    const existingResponse = await existingCheckoutResponse(checkoutKey, session.id);
+    if (existingResponse) return existingResponse;
+
     const requiredAddressFields = ["fullName", "phone", "email", "zipCode", "street", "number", "neighborhood", "city", "state"];
     if (requiredAddressFields.some((field) => !isNonEmptyString(address[field]))) {
       return jsonError("Preencha todos os dados obrigatorios do endereco");
@@ -112,10 +137,9 @@ export async function POST(req: Request) {
     const quotes = await getShippingQuotes(validItems, String(address.zipCode));
     const selectedQuote = quotes.find((quote) => quote.id === String(shippingServiceId ?? "")) ?? quotes[0];
 
-    const order = await createOrderFromCart(
-      userId.trim(),
-      validItems,
-      {
+    let order;
+    try {
+      order = await createOrderFromCart(userId.trim(), validItems, {
         address: {
           fullName: String(address.fullName ?? "").trim(),
           phone: String(address.phone ?? "").trim(),
@@ -135,8 +159,17 @@ export async function POST(req: Request) {
         shippingService: `${selectedQuote.company} - ${selectedQuote.name}`,
         shippingServiceId: selectedQuote.id,
         shippingDeadline: selectedQuote.deliveryDays,
+        checkoutKey,
+      });
+    } catch (error) {
+      // Duas requisicoes simultaneas podem passar pela primeira consulta. A
+      // restricao unica do banco escolhe uma delas, e a outra reutiliza o pedido.
+      if (String(error).includes("P2002")) {
+        const concurrentResponse = await existingCheckoutResponse(checkoutKey, session.id);
+        if (concurrentResponse) return concurrentResponse;
       }
-    );
+      throw error;
+    }
     let paymentUrl: string | undefined;
     try {
       const payment = await createPaymentPreference(order.id);
@@ -149,10 +182,10 @@ export async function POST(req: Request) {
       to: order.customerEmail,
       subject: `Recebemos seu pedido #${order.id.slice(-8).toUpperCase()}`,
       idempotencyKey: `order-created-${order.id}`,
-      html: `<h1>Pedido recebido</h1><p>Ola, ${escapeHtml(order.customerName)}.</p><p>Seu pedido foi registrado no valor de <strong>R$ ${order.total.toFixed(2)}</strong>.</p>`,
+      html: `<h1>Pedido recebido</h1><p>Ola, ${escapeHtml(order.customerName)}.</p><p>Seu pedido foi registrado no valor de <strong>R$ ${Number(order.total).toFixed(2)}</strong>.</p>`,
     }).catch(console.error);
 
-    return NextResponse.json({ order, paymentUrl }, { status: 201 });
+    return NextResponse.json({ order: serializeOrder(order), paymentUrl }, { status: 201 });
   } catch (error) {
     console.error(error);
     return jsonError("Erro ao criar o pedido", 500);

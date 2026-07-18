@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CreditCard, LockKeyhole, Truck } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import SiteShell from "@/templates/layout/SiteShell";
 import { formatCurrency, getProductPrice, type StorefrontProduct } from "@/shared/storefront";
@@ -32,6 +32,7 @@ export default function CheckoutPage() {
   const [quotes, setQuotes] = useState<ShippingQuote[]>([]);
   const [selectedShipping, setSelectedShipping] = useState("");
   const [shippingLoading, setShippingLoading] = useState(false);
+  const checkoutKey = useRef<string | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -80,10 +81,11 @@ export default function CheckoutPage() {
 
     setLoading(true);
     setStatus("");
+    checkoutKey.current ??= crypto.randomUUID();
 
     const response = await fetch("/api/orders", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "Idempotency-Key": checkoutKey.current },
       body: JSON.stringify({
         userId: user.id,
         items: cartProducts.map((item) => ({
@@ -117,6 +119,7 @@ export default function CheckoutPage() {
     }
 
     window.localStorage.removeItem("lsz-cart");
+    checkoutKey.current = null;
     window.dispatchEvent(new Event("lsz-cart-updated"));
     setStatus("Pedido criado com sucesso.");
     if (payload.paymentUrl) {

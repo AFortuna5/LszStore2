@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { jsonError } from "@/server/http/api";
 import { publicUserSelect, readSessionFromRequest } from "@/server/auth/session";
 import { prisma } from "@/server/database/client";
+import { serializeOrder } from "@/server/services/orders";
 
 export async function GET(req: Request) {
   try {
@@ -40,7 +41,7 @@ export async function GET(req: Request) {
       return jsonError("Usuario nao encontrado", 404);
     }
 
-    return NextResponse.json({ user });
+    return NextResponse.json({ user: { ...user, orders: user.orders.map(serializeOrder) } });
   } catch (error) {
     console.error(error);
     return jsonError("Erro ao buscar sessao", 500);

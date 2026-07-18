@@ -3,6 +3,7 @@ import "server-only";
 import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/server/database/client";
+import { moneySum, moneyToNumber } from "@/server/money";
 import { changeInventory } from "@/server/services/inventory";
 
 export type CartItemInput = {
@@ -31,6 +32,7 @@ type CheckoutOrderInput = {
   shippingService?: string;
   shippingServiceId?: string;
   shippingDeadline?: number;
+  checkoutKey?: string;
 };
 
 const orderInclude = {
@@ -64,7 +66,9 @@ export async function createOrderFromCart(
     throw new Error("Adicione pelo menos um produto ao pedido");
   }
 
-  return prisma.$transaction(async (tx) => {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await prisma.$transaction(async (tx) => {
     const user = await tx.user.findUnique({
       where: { id: userId },
       select: { id: true, name: true, email: true },
@@ -113,7 +117,7 @@ export async function createOrderFromCart(
         ? product.variants.find((entry) => entry.id === item.variantId)
         : product.variants.find((entry) => entry.isDefault) ?? product.variants[0];
 
-      const price = variant?.priceOverride ?? product.promoPrice ?? product.price;
+      const price = moneyToNumber(variant?.priceOverride ?? product.promoPrice ?? product.price);
 
       return {
         productId: product.id,
@@ -126,12 +130,9 @@ export async function createOrderFromCart(
       };
     });
 
-    const total = orderItems.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
+    const total = moneySum(orderItems.map((item) => item.price * item.quantity));
 
-    const shippingCost = checkout?.shippingCost ?? 0;
+    const shippingCost = moneyToNumber(checkout?.shippingCost ?? 0);
     const subtotal = total;
     const address = checkout?.address;
 
@@ -150,7 +151,8 @@ export async function createOrderFromCart(
         addressId: shippingAddress?.id,
         subtotal,
         shippingCost,
-        total: subtotal + shippingCost,
+        total: moneySum([subtotal, shippingCost]),
+        checkoutKey: checkout?.checkoutKey,
         paymentMethod: checkout?.paymentMethod ?? "PENDING",
         paymentProvider: checkout?.paymentMethod === "MERCADO_PAGO" ? "MERCADO_PAGO" : "MANUAL",
         shippingService: checkout?.shippingService,
@@ -194,10 +196,32 @@ export async function createOrderFromCart(
     }
 
     return order;
-  });
+      }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    } catch (error) {
+      const retryable = String(error).includes("INVENTORY_CONFLICT") || String(error).includes("P2034");
+      if (!retryable || attempt === 2) throw error;
+    }
+  }
+  throw new Error("INVENTORY_CONFLICT");
 }
 
 export { orderInclude };
+
+export function serializeOrder<T extends Record<string, unknown>>(order: T) {
+  const items = Array.isArray(order.items)
+    ? order.items.map((item) => {
+        const record = item as Record<string, unknown>;
+        return { ...record, price: moneyToNumber(record.price as number | string | { toString(): string }) };
+      })
+    : order.items;
+  return {
+    ...order,
+    subtotal: moneyToNumber(order.subtotal as number | string | { toString(): string }),
+    shippingCost: moneyToNumber(order.shippingCost as number | string | { toString(): string }),
+    total: moneyToNumber(order.total as number | string | { toString(): string }),
+    items,
+  };
+}
 
 function mergeCartItems(items: CartItemInput[]) {
   const merged = new Map<string, CartItemInput>();
