@@ -4,6 +4,7 @@ import FeaturedProducts from "@/templates/home/FeaturedProducts";
 import Hero from "@/templates/home/Hero";
 import Newsletter from "@/templates/home/Newsletter";
 import StoreBenefits from "@/templates/home/StoreBenefits";
+import WelcomeSection from "@/templates/home/WelcomeSection";
 import Footer from "@/templates/layout/Footer";
 import Header from "@/templates/layout/Header";
 import TopBar from "@/templates/layout/TopBar";
@@ -18,14 +19,18 @@ export default async function Home() {
   ]);
   const featured = products.filter((product) => product.isFeatured);
   const newProducts = products.filter((product) => product.isNew);
+  const availableProducts = products.filter(
+    (product) => product.inventory > 0 || product.variants.some((variant) => variant.inventory > 0)
+  );
 
   return (
     <>
       <TopBar />
       <Header />
-      <main className="flex-1 bg-white text-black">
-        <Hero />
+      <main className="min-w-0 flex-1 overflow-x-hidden bg-white text-black">
+        <Hero products={availableProducts} />
         <StoreBenefits />
+        <WelcomeSection />
         <FeaturedProducts
           products={(featured.length > 0 ? featured : products).slice(0, 4)}
           eyebrow="Escolhas da loja"

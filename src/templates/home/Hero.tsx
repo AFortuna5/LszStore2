@@ -1,10 +1,58 @@
-import { ArrowRight } from "lucide-react";
+"use client";
+
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 
-const heroImage = "https://images.unsplash.com/photo-1550246140-5119ae4790b8?auto=format&fit=crop&w=1800&q=88";
+import type { StorefrontProduct } from "@/shared/storefront";
 
-export default function Hero() {
+const fallbackImage = "https://images.unsplash.com/photo-1550246140-5119ae4790b8?auto=format&fit=crop&w=1800&q=88";
+
+type HeroSlide = {
+  key: string;
+  image: string;
+  name: string;
+  href: string;
+};
+
+export default function Hero({ products }: { products: StorefrontProduct[] }) {
+  const reduceMotion = useReducedMotion();
+  const [index, setIndex] = useState(0);
+  const slides = useMemo<HeroSlide[]>(() => {
+    const seen = new Set<string>();
+    const productSlides = products.flatMap((product) =>
+      product.gallery.slice(0, 2).flatMap((image, imageIndex) => {
+        if (!image || seen.has(image)) return [];
+        seen.add(image);
+        return [{
+          key: `${product.id}-${imageIndex}`,
+          image,
+          name: product.name,
+          href: `/produto/${product.slug}`,
+        }];
+      })
+    );
+
+    return productSlides.length > 0
+      ? productSlides.slice(0, 10)
+      : [{ key: "fallback", image: fallbackImage, name: "Moda urbana LSZ Store", href: "/produtos" }];
+  }, [products]);
+
+  useEffect(() => {
+    if (slides.length < 2 || reduceMotion) return;
+    const timer = window.setInterval(() => {
+      setIndex((current) => (current + 1) % slides.length);
+    }, 4500);
+    return () => window.clearInterval(timer);
+  }, [reduceMotion, slides.length]);
+
+  const activeIndex = index % slides.length;
+  const currentSlide = slides[activeIndex];
+  const previous = () => setIndex((current) => (current - 1 + slides.length) % slides.length);
+  const next = () => setIndex((current) => (current + 1) % slides.length);
+
   return (
     <section className="relative min-h-[690px] overflow-hidden bg-[#f4f4f1] pt-28 lg:min-h-[760px]">
       <div className="mx-auto grid min-h-[578px] max-w-[1600px] lg:grid-cols-[44%_56%] lg:min-h-[648px]">
@@ -29,20 +77,53 @@ export default function Hero() {
           </div>
         </div>
 
-        <div className="relative min-h-[460px] overflow-hidden lg:min-h-full">
-          <Image
-            src={heroImage}
-            alt="Moda urbana LSZ Store"
-            fill
-            priority
-            className="object-cover object-center"
-            sizes="(min-width: 1024px) 56vw, 100vw"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#f4f4f1] via-transparent to-transparent opacity-20 lg:opacity-70" />
-          <div className="absolute bottom-6 right-6 bg-white/95 px-5 py-4 text-black shadow-xl backdrop-blur sm:bottom-10 sm:right-10">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500">LSZ Selection</p>
-            <p className="mt-1 font-montserrat text-lg font-black uppercase">Estilo sem padrão</p>
-          </div>
+        <div className="relative min-h-[460px] overflow-hidden bg-[#e9e9e6] lg:min-h-full" role="region" aria-label="Produtos disponíveis na loja" aria-live="polite">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={currentSlide.key}
+              initial={reduceMotion ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={reduceMotion ? undefined : { opacity: 0 }}
+              transition={{ duration: 0.65 }}
+              className="absolute inset-0"
+            >
+              <Image src={currentSlide.image} alt="" fill className="scale-110 object-cover opacity-15 blur-2xl" sizes="(min-width: 1024px) 56vw, 100vw" />
+              <Link href={currentSlide.href} aria-label={`Ver ${currentSlide.name}`} className="absolute inset-0">
+                <Image
+                  src={currentSlide.image}
+                  alt={currentSlide.name}
+                  fill
+                  loading="eager"
+                  className="object-contain p-6 sm:p-10 lg:p-12"
+                  sizes="(min-width: 1024px) 56vw, 100vw"
+                />
+              </Link>
+            </motion.div>
+          </AnimatePresence>
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-[#f4f4f1]/60 via-transparent to-transparent lg:from-[#f4f4f1]/35" />
+
+          {slides.length > 1 && (
+            <div className="absolute inset-x-0 bottom-5 z-10 flex items-center justify-center gap-3 sm:bottom-8">
+              <button type="button" onClick={previous} aria-label="Foto anterior" className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-black shadow transition-colors hover:bg-neon-blue">
+                <ArrowLeft size={16} />
+              </button>
+              <div className="flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-2 shadow">
+                {slides.map((slide, slideIndex) => (
+                  <button
+                    key={slide.key}
+                    type="button"
+                    onClick={() => setIndex(slideIndex)}
+                    aria-label={`Mostrar foto ${slideIndex + 1}: ${slide.name}`}
+                    aria-current={slideIndex === activeIndex}
+                    className={`h-1.5 rounded-full transition-all ${slideIndex === activeIndex ? "w-6 bg-neon-blue" : "w-1.5 bg-black/25 hover:bg-black/60"}`}
+                  />
+                ))}
+              </div>
+              <button type="button" onClick={next} aria-label="Próxima foto" className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-black shadow transition-colors hover:bg-neon-blue">
+                <ArrowRight size={16} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </section>

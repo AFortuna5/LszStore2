@@ -18,6 +18,9 @@ export default function EditorialBanner() {
           <Link href="/colecoes" className="mt-9 inline-flex w-fit items-center gap-3 border-b border-white pb-2 text-xs font-bold uppercase tracking-[0.16em] transition-colors hover:border-neon-blue hover:text-neon-blue">
             Explorar coleções <ArrowRight size={16} />
           </Link>
+          <div className="relative mt-10 h-24 w-52 -rotate-2 overflow-hidden border border-neon-blue/30 bg-dark-blue shadow-2xl">
+            <Image src="/logo-lsz-store.png" alt="LSZ Store" fill unoptimized className="object-cover" sizes="208px" />
+          </div>
         </div>
       </div>
     </section>
