@@ -1,8 +1,12 @@
-import SiteShell from "@/components/layout/SiteShell";
-import ProductGrid from "@/components/products/ProductGrid";
-import { products } from "@/lib/store-data";
+import SiteShell from "@/templates/layout/SiteShell";
+import ProductGrid from "@/templates/products/ProductGrid";
+import { getNewStorefrontProducts } from "@/server/repositories/catalog";
 
-export default function NewProductsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function NewProductsPage() {
+  const products = await getNewStorefrontProducts();
+
   return (
     <SiteShell>
       <section className="bg-black py-14">
@@ -13,7 +17,7 @@ export default function NewProductsPage() {
           <h1 className="mb-8 font-montserrat text-4xl font-black uppercase text-white md:text-5xl">
             Novidades
           </h1>
-          <ProductGrid products={products.filter((product) => product.isNew)} />
+          <ProductGrid products={products} />
         </div>
       </section>
     </SiteShell>

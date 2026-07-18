@@ -1,0 +1,83 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+
+import SiteShell from "@/templates/layout/SiteShell";
+import { readSessionFromCookies } from "@/server/auth/session";
+import { env } from "@/server/config/env";
+import { prisma } from "@/server/database/client";
+import { getMercadoPagoReadiness } from "@/server/services/payment";
+
+export const dynamic = "force-dynamic";
+
+export default async function AdminPage() {
+  const session = await readSessionFromCookies();
+
+  if (!session || session.role !== "ADMIN") {
+    redirect("/login");
+  }
+
+  const [users, products, orders, categories] = await Promise.all([
+    prisma.user.count(),
+    prisma.product.count(),
+    prisma.order.count(),
+    prisma.category.count(),
+  ]);
+  const payment = getMercadoPagoReadiness();
+
+  return (
+    <SiteShell>
+      <section className="bg-black py-14">
+        <div className="container mx-auto px-4 md:px-6">
+          <p className="mb-2 text-sm font-bold uppercase tracking-wide text-neon-blue">
+            Backoffice
+          </p>
+          <h1 className="mb-8 font-montserrat text-4xl font-black uppercase text-white md:text-5xl">
+            Painel admin
+          </h1>
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+            {[
+              { label: "Usuarios", value: users },
+              { label: "Produtos", value: products },
+              { label: "Pedidos", value: orders },
+              { label: "Categorias", value: categories },
+            ].map((item) => (
+              <div key={item.label} className="rounded-lg border border-border bg-dark-blue p-6">
+                <p className="text-sm uppercase tracking-wide text-silver">{item.label}</p>
+                <p className="mt-3 font-montserrat text-4xl font-black text-white">{item.value}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className={`mt-8 rounded-lg border p-6 ${payment.ready ? "border-emerald-500/50 bg-emerald-500/10" : "border-amber-500/50 bg-amber-500/10"}`}>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-bold uppercase tracking-wide text-white">Mercado Pago</p>
+                <p className="mt-2 text-sm text-silver">{payment.ready ? `Configurado em modo ${env.mercadoPagoSandbox ? "teste" : "producao"}.` : "Configuracao pendente. O checkout permanece bloqueado para evitar pedidos sem cobranca."}</p>
+              </div>
+              <span className={`rounded px-3 py-2 text-xs font-bold uppercase ${payment.ready ? "bg-emerald-400 text-black" : "bg-amber-400 text-black"}`}>{payment.ready ? "Pronto" : "Pendente"}</span>
+            </div>
+            <p className="mt-3 break-all text-xs text-silver">Webhook: {env.appUrl}/api/payments/mercadopago/webhook</p>
+          </div>
+
+          <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+            <Link href="/admin/produtos" className="rounded border border-border bg-dark-blue p-5 text-white hover:border-neon-blue">
+              Gerenciar produtos e categorias
+            </Link>
+            <Link href="/admin/pedidos" className="rounded border border-border bg-dark-blue p-5 text-white hover:border-neon-blue">
+              Gerenciar pedidos e envios
+            </Link>
+            <Link href="/admin/inventario" className="rounded border border-border bg-dark-blue p-5 text-white hover:border-neon-blue">
+              Inventario, entradas, saidas e logs
+            </Link>
+            <Link href="/minha-conta" className="rounded border border-border bg-dark-blue p-5 text-white hover:border-neon-blue">
+              Area do cliente
+            </Link>
+            <Link href="/admin/atendimento" className="rounded border border-border bg-dark-blue p-5 text-white hover:border-neon-blue">
+              Contatos e newsletter
+            </Link>
+          </div>
+        </div>
+      </section>
+    </SiteShell>
+  );
+}

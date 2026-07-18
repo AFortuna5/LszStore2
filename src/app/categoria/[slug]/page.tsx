@@ -1,23 +1,22 @@
 import { notFound } from "next/navigation";
 
-import SiteShell from "@/components/layout/SiteShell";
-import ProductGrid from "@/components/products/ProductGrid";
-import { categories, products } from "@/lib/store-data";
+import SiteShell from "@/templates/layout/SiteShell";
+import ProductGrid from "@/templates/products/ProductGrid";
+import { getStorefrontCategories, getStorefrontProducts } from "@/server/repositories/catalog";
 
 type CategoryPageProps = {
   params: Promise<{ slug: string }>;
 };
 
-export async function generateStaticParams() {
-  return categories.map((category) => ({ slug: category.slug }));
-}
+export const dynamic = "force-dynamic";
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
   const { slug } = await params;
+  const categories = await getStorefrontCategories();
   const category = categories.find((entry) => entry.slug === slug);
   if (!category) notFound();
 
-  const categoryProducts = products.filter(
+  const categoryProducts = (await getStorefrontProducts()).filter(
     (product) => product.categorySlug === category.slug
   );
 

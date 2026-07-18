@@ -1,9 +1,16 @@
-import ProductGrid from "@/components/products/ProductGrid";
-import SiteShell from "@/components/layout/SiteShell";
-import { categories, products } from "@/lib/store-data";
+import ProductGrid from "@/templates/products/ProductGrid";
+import SiteShell from "@/templates/layout/SiteShell";
 import Link from "next/link";
+import { getStorefrontCategories, getStorefrontProducts } from "@/server/repositories/catalog";
 
-export default function ProductsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function ProductsPage() {
+  const [categories, products] = await Promise.all([
+    getStorefrontCategories(),
+    getStorefrontProducts(),
+  ]);
+
   return (
     <SiteShell>
       <section className="bg-black py-14">

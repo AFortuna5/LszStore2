@@ -2,30 +2,36 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { ShieldCheck, Star, Truck } from "lucide-react";
 
-import SiteShell from "@/components/layout/SiteShell";
-import AddToCartButton from "@/components/products/AddToCartButton";
-import ProductGrid from "@/components/products/ProductGrid";
-import {
-  formatCurrency,
-  getProductBySlugOrId,
-  products,
-} from "@/lib/store-data";
+import SiteShell from "@/templates/layout/SiteShell";
+import ProductPurchasePanel from "@/templates/products/ProductPurchasePanel";
+import ProductGrid from "@/templates/products/ProductGrid";
+import { getStorefrontProductBySlug, getStorefrontProducts } from "@/server/repositories/catalog";
+import type { Metadata } from "next";
 
 type ProductPageProps = {
   params: Promise<{ id: string }>;
 };
 
-export async function generateStaticParams() {
-  return products.map((product) => ({ id: product.slug }));
+export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
+  const product = await getStorefrontProductBySlug((await params).id);
+  if (!product) return { title: "Produto nao encontrado" };
+  return {
+    title: `${product.name} | LSZ Store`,
+    description: product.description.slice(0, 160),
+    alternates: { canonical: `/produto/${product.slug}` },
+    openGraph: { title: product.name, description: product.description, images: product.gallery },
+  };
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { id } = await params;
-  const product = getProductBySlugOrId(id);
+  const product = await getStorefrontProductBySlug(id);
 
   if (!product) notFound();
 
-  const related = products
+  const related = (await getStorefrontProducts())
     .filter(
       (entry) =>
         entry.id !== product.id && entry.categorySlug === product.categorySlug
@@ -90,25 +96,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
               <p className="mt-6 text-lg leading-relaxed text-silver">
                 {product.description}
               </p>
-              <div className="mt-6 flex items-end gap-3">
-                {product.promoPrice && (
-                  <span className="text-lg text-silver line-through">
-                    {formatCurrency(product.price)}
-                  </span>
-                )}
-                <span className="font-montserrat text-4xl font-black text-white">
-                  {formatCurrency(product.promoPrice ?? product.price)}
-                </span>
-              </div>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <AddToCartButton product={product} className="py-4 sm:flex-1" />
-                <a
-                  href="/checkout"
-                  className="inline-flex justify-center rounded border border-silver px-6 py-4 font-bold uppercase text-white transition-colors hover:border-neon-blue hover:text-neon-blue sm:flex-1"
-                >
-                  Comprar agora
-                </a>
-              </div>
+              <ProductPurchasePanel product={product} />
               <div className="mt-8 grid gap-3 sm:grid-cols-2">
                 <div className="rounded border border-border bg-dark-blue p-4">
                   <Truck className="mb-3 text-neon-blue" size={22} />

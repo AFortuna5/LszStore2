@@ -1,9 +1,16 @@
 import Link from "next/link";
 
-import SiteShell from "@/components/layout/SiteShell";
-import { collections, products } from "@/lib/store-data";
+import SiteShell from "@/templates/layout/SiteShell";
+import { getStorefrontCollections, getStorefrontProducts } from "@/server/repositories/catalog";
 
-export default function CollectionsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function CollectionsPage() {
+  const [collections, products] = await Promise.all([
+    getStorefrontCollections(),
+    getStorefrontProducts(),
+  ]);
+
   return (
     <SiteShell>
       <section className="bg-black py-14">

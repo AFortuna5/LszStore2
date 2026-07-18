@@ -1,8 +1,12 @@
-import SiteShell from "@/components/layout/SiteShell";
-import ProductGrid from "@/components/products/ProductGrid";
-import { products } from "@/lib/store-data";
+import SiteShell from "@/templates/layout/SiteShell";
+import ProductGrid from "@/templates/products/ProductGrid";
+import { getStorefrontProducts } from "@/server/repositories/catalog";
 
-export default function PromosPage() {
+export const dynamic = "force-dynamic";
+
+export default async function PromosPage() {
+  const products = await getStorefrontProducts();
+
   return (
     <SiteShell>
       <section className="bg-black py-14">

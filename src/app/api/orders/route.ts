@@ -6,12 +6,21 @@ import {
   jsonError,
   readJson,
   toPositiveInt,
-} from "@/lib/api";
-import { createOrderFromCart, orderInclude } from "@/lib/orders";
-import { prisma } from "@/lib/prisma";
+} from "@/server/http/api";
+import { readSessionFromRequest } from "@/server/auth/session";
+import { createOrderFromCart, orderInclude } from "@/server/services/orders";
+import { prisma } from "@/server/database/client";
+import { getShippingQuotes } from "@/server/services/shipping";
+import { createPaymentPreference, getMercadoPagoReadiness } from "@/server/services/payment";
+import { escapeHtml, sendEmail } from "@/server/services/email";
 
 export async function GET(req: Request) {
   try {
+    const session = readSessionFromRequest(req);
+    if (!session) {
+      return jsonError("Nao autorizado", 401);
+    }
+
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get("userId")?.trim();
     const status = searchParams.get("status")?.trim();
@@ -23,6 +32,7 @@ export async function GET(req: Request) {
 
     const orders = await prisma.order.findMany({
       where: {
+        ...(session.role === "ADMIN" ? {} : { userId: session.id }),
         ...(userId ? { userId } : {}),
         ...(status ? { status } : {}),
       },
@@ -49,14 +59,38 @@ export async function POST(req: Request) {
       return jsonError("JSON invalido");
     }
 
-    const { userId, items } = body;
+    const session = readSessionFromRequest(req);
+    if (!session) {
+      return jsonError("Nao autorizado", 401);
+    }
 
-    if (!isNonEmptyString(userId)) {
-      return jsonError("Usuario e obrigatorio");
+    const { userId, items, address, paymentMethod, shippingServiceId } = body;
+
+    if (!isNonEmptyString(userId) || userId.trim() !== session.id) {
+      return jsonError("Usuario invalido", 401);
     }
 
     if (!Array.isArray(items)) {
       return jsonError("Itens do pedido sao obrigatorios");
+    }
+
+    if (!isRecord(address)) {
+      return jsonError("Endereco e obrigatorio");
+    }
+
+    if (!isNonEmptyString(paymentMethod)) {
+      return jsonError("Forma de pagamento obrigatoria");
+    }
+    if (paymentMethod.trim().toUpperCase() !== "MERCADO_PAGO") {
+      return jsonError("Forma de pagamento invalida");
+    }
+    if (!getMercadoPagoReadiness().ready) {
+      return jsonError("Pagamento temporariamente indisponivel", 503);
+    }
+
+    const requiredAddressFields = ["fullName", "phone", "email", "zipCode", "street", "number", "neighborhood", "city", "state"];
+    if (requiredAddressFields.some((field) => !isNonEmptyString(address[field]))) {
+      return jsonError("Preencha todos os dados obrigatorios do endereco");
     }
 
     const parsedItems = items.map((item) => {
@@ -65,6 +99,7 @@ export async function POST(req: Request) {
       if (!quantity) return null;
       return {
         productId: item.productId.trim(),
+        variantId: isNonEmptyString(item.variantId) ? item.variantId.trim() : null,
         quantity,
       };
     });
@@ -73,12 +108,51 @@ export async function POST(req: Request) {
       return jsonError("Itens do pedido invalidos");
     }
 
+    const validItems = parsedItems as { productId: string; variantId?: string | null; quantity: number }[];
+    const quotes = await getShippingQuotes(validItems, String(address.zipCode));
+    const selectedQuote = quotes.find((quote) => quote.id === String(shippingServiceId ?? "")) ?? quotes[0];
+
     const order = await createOrderFromCart(
       userId.trim(),
-      parsedItems as { productId: string; quantity: number }[]
+      validItems,
+      {
+        address: {
+          fullName: String(address.fullName ?? "").trim(),
+          phone: String(address.phone ?? "").trim(),
+          email: String(address.email ?? "").trim(),
+          zipCode: String(address.zipCode ?? "").trim(),
+          street: String(address.street ?? "").trim(),
+          number: String(address.number ?? "").trim(),
+          neighborhood: String(address.neighborhood ?? "").trim(),
+          city: String(address.city ?? "").trim(),
+          state: String(address.state ?? "").trim(),
+          complement: isNonEmptyString(address.complement)
+            ? address.complement.trim()
+            : null,
+        },
+        paymentMethod: paymentMethod.trim().toUpperCase(),
+        shippingCost: selectedQuote.price,
+        shippingService: `${selectedQuote.company} - ${selectedQuote.name}`,
+        shippingServiceId: selectedQuote.id,
+        shippingDeadline: selectedQuote.deliveryDays,
+      }
     );
+    let paymentUrl: string | undefined;
+    try {
+      const payment = await createPaymentPreference(order.id);
+      paymentUrl = payment.url;
+    } catch (paymentError) {
+      console.error(paymentError);
+      await prisma.order.update({ where: { id: order.id }, data: { paymentStatus: "ERROR" } });
+    }
+    void sendEmail({
+      to: order.customerEmail,
+      subject: `Recebemos seu pedido #${order.id.slice(-8).toUpperCase()}`,
+      idempotencyKey: `order-created-${order.id}`,
+      html: `<h1>Pedido recebido</h1><p>Ola, ${escapeHtml(order.customerName)}.</p><p>Seu pedido foi registrado no valor de <strong>R$ ${order.total.toFixed(2)}</strong>.</p>`,
+    }).catch(console.error);
 
-    return NextResponse.json(order, { status: 201 });
+    return NextResponse.json({ order, paymentUrl }, { status: 201 });
   } catch (error) {
     console.error(error);
     return jsonError("Erro ao criar o pedido", 500);

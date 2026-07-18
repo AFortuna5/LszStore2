@@ -1,4 +1,4 @@
-import SiteShell from "@/components/layout/SiteShell";
+import SiteShell from "@/templates/layout/SiteShell";
 
 export default function ExchangesPage() {
   return (

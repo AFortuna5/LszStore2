@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 
-import { isNonEmptyString, isRecord, jsonError, readJson, slugify } from "@/lib/api";
-import { prisma } from "@/lib/prisma";
+import { isNonEmptyString, isRecord, jsonError, readJson, slugify } from "@/server/http/api";
+import { readSessionFromRequest } from "@/server/auth/session";
+import { prisma } from "@/server/database/client";
+import { toStorefrontCategory } from "@/shared/storefront";
 
 export async function GET() {
   try {
@@ -17,7 +19,7 @@ export async function GET() {
         name: "asc",
       },
     });
-    return NextResponse.json(categories);
+    return NextResponse.json(categories.map(toStorefrontCategory));
   } catch (error) {
     console.error(error);
     return NextResponse.json(
@@ -29,6 +31,11 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const session = readSessionFromRequest(req);
+    if (!session || session.role !== "ADMIN") {
+      return jsonError("Nao autorizado", 401);
+    }
+
     const body = await readJson(req);
 
     if (!isRecord(body)) {
@@ -59,6 +66,9 @@ export async function POST(req: Request) {
     return NextResponse.json(newCategory, { status: 201 });
   } catch (error) {
     console.error(error);
+    if (String(error).includes("Unique constraint")) {
+      return jsonError("Ja existe uma categoria com este nome ou endereco", 409);
+    }
     return NextResponse.json(
       { error: "Erro ao criar a categoria" },
       { status: 500 }

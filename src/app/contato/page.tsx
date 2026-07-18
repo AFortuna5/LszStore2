@@ -1,8 +1,19 @@
-import { Instagram, Mail, MessageCircle, Phone } from "lucide-react";
+"use client";
 
-import SiteShell from "@/components/layout/SiteShell";
+import { Camera, Mail, MessageCircle, Phone } from "lucide-react";
+import { useState } from "react";
+
+import SiteShell from "@/templates/layout/SiteShell";
 
 export default function ContactPage() {
+  const phone = process.env.NEXT_PUBLIC_STORE_PHONE ?? "(11) 99999-9999";
+  const [status, setStatus] = useState("");
+  async function sendContact(formData: FormData) {
+    setStatus("Enviando...");
+    const response = await fetch("/api/contact", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(Object.fromEntries(formData.entries())) });
+    const result = await response.json();
+    setStatus(response.ok ? "Mensagem enviada. Responderemos o mais breve possível." : result.error ?? "Nao foi possivel enviar");
+  }
   return (
     <SiteShell>
       <section className="bg-black py-14">
@@ -15,22 +26,23 @@ export default function ContactPage() {
               Fale conosco
             </h1>
             <div className="mt-8 space-y-4 text-silver">
-              <p className="flex gap-3"><Phone className="text-neon-blue" /> (11) 99999-9999</p>
+              <p className="flex gap-3"><Phone className="text-neon-blue" /> {phone}</p>
               <p className="flex gap-3"><Mail className="text-neon-blue" /> contato@lszstore.com.br</p>
-              <p className="flex gap-3"><Instagram className="text-neon-blue" /> @lsz.storee</p>
+              <p className="flex gap-3"><Camera className="text-neon-blue" /> @lsz.storee</p>
             </div>
           </div>
-          <form className="rounded-lg border border-border bg-dark-blue p-6">
+          <form action={sendContact} className="rounded-lg border border-border bg-dark-blue p-6">
             <div className="grid gap-4 md:grid-cols-2">
-              <input className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="Nome" />
-              <input className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="E-mail" />
-              <input className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue md:col-span-2" placeholder="Assunto" />
-              <textarea className="min-h-40 rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue md:col-span-2" placeholder="Mensagem" />
+              <input required name="name" className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="Nome" />
+              <input required type="email" name="email" className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="E-mail" />
+              <input required name="subject" className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue md:col-span-2" placeholder="Assunto" />
+              <textarea required name="message" className="min-h-40 rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue md:col-span-2" placeholder="Mensagem" />
             </div>
-            <button type="button" className="mt-5 inline-flex items-center gap-2 rounded bg-neon-blue px-6 py-3 font-bold uppercase text-black hover:bg-white">
+            <button className="mt-5 inline-flex items-center gap-2 rounded bg-neon-blue px-6 py-3 font-bold uppercase text-black hover:bg-white">
               <MessageCircle size={18} />
               Enviar mensagem
             </button>
+            {status && <p className="mt-4 text-sm text-neon-blue">{status}</p>}
           </form>
         </div>
       </section>

@@ -9,8 +9,11 @@ import {
   toBooleanParam,
   toNonNegativeNumber,
   toPositiveInt,
-} from "@/lib/api";
-import { prisma } from "@/lib/prisma";
+} from "@/server/http/api";
+import { readSessionFromRequest } from "@/server/auth/session";
+import { prisma } from "@/server/database/client";
+import { recordInventorySnapshot } from "@/server/services/inventory";
+import { toStorefrontProduct } from "@/shared/storefront";
 
 export async function GET(req: Request) {
   try {
@@ -44,6 +47,11 @@ export async function GET(req: Request) {
       },
       include: {
         category: true,
+        variants: {
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
       },
       orderBy: {
         createdAt: "desc",
@@ -52,7 +60,7 @@ export async function GET(req: Request) {
       take: limit,
     });
 
-    return NextResponse.json(products);
+    return NextResponse.json(products.map(toStorefrontProduct));
   } catch (error) {
     console.error(error);
     return NextResponse.json(
@@ -64,6 +72,11 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const session = readSessionFromRequest(req);
+    if (!session || session.role !== "ADMIN") {
+      return jsonError("Nao autorizado", 401);
+    }
+
     const body = await readJson(req);
 
     if (!isRecord(body)) {
@@ -72,15 +85,25 @@ export async function POST(req: Request) {
 
     const {
       name,
+      slug,
       description,
       price,
       promoPrice,
       brand,
       inventory,
       categoryId,
+      collection,
+      rating,
       images,
+      details,
       isFeatured,
       isPremium,
+      isNew,
+      variants,
+      weight,
+      width,
+      height,
+      length,
     } = body;
 
     const normalizedPrice = toNonNegativeNumber(price);
@@ -95,6 +118,7 @@ export async function POST(req: Request) {
     if (!isNonEmptyString(description)) {
       return jsonError("Descricao e obrigatoria");
     }
+    const normalizedSlug = isNonEmptyString(slug) ? slug.trim() : undefined;
     if (normalizedPrice === null) return jsonError("Preco invalido");
     if (normalizedPromoPrice === null && promoPrice !== undefined) {
       return jsonError("Preco promocional invalido");
@@ -104,9 +128,11 @@ export async function POST(req: Request) {
     }
     if (!normalizedImages) return jsonError("Imagem e obrigatoria");
 
-    const newProduct = await prisma.product.create({
-      data: {
+    const newProduct = await prisma.$transaction(async (tx) => {
+      const product = await tx.product.create({
+        data: {
         name: name.trim(),
+        slug: normalizedSlug ?? name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
         description: description.trim(),
         price: normalizedPrice,
         promoPrice: normalizedPromoPrice,
@@ -114,17 +140,79 @@ export async function POST(req: Request) {
         inventory: normalizedInventory,
         categoryId: categoryId.trim(),
         images: normalizedImages,
+        collection: isNonEmptyString(collection) ? collection.trim() : "Colecao Principal",
+        rating: toNonNegativeNumber(rating) ?? 5,
+        details: Array.isArray(details)
+          ? details.filter(isNonEmptyString).map((detail) => detail.trim()).join("|")
+          : "",
         isFeatured: Boolean(isFeatured),
         isPremium: Boolean(isPremium),
+        isNew: Boolean(isNew),
+        weight: toNonNegativeNumber(weight) ?? 0.3,
+        width: toNonNegativeNumber(width) ?? 20,
+        height: toNonNegativeNumber(height) ?? 10,
+        length: toNonNegativeNumber(length) ?? 25,
+        variants: Array.isArray(variants)
+          ? {
+              create: variants
+                .filter(isRecord)
+                .map((variant) => ({
+                  sku: isNonEmptyString(variant.sku)
+                    ? variant.sku.trim()
+                    : `${name.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "-")}-DEFAULT`,
+                  label: isNonEmptyString(variant.label) ? variant.label.trim() : "Padrao",
+                  size: isNonEmptyString(variant.size) ? variant.size.trim() : null,
+                  color: isNonEmptyString(variant.color) ? variant.color.trim() : null,
+                  inventory: toPositiveInt(variant.inventory, normalizedInventory) ?? normalizedInventory,
+                  image: isNonEmptyString(variant.image) ? variant.image.trim() : null,
+                  priceOverride:
+                    variant.priceOverride === undefined || variant.priceOverride === null
+                      ? null
+                      : toNonNegativeNumber(variant.priceOverride),
+                  isDefault: Boolean(variant.isDefault),
+                })),
+            }
+          : undefined,
       },
-      include: {
-        category: true,
-      },
+        include: {
+          category: true,
+          variants: true,
+        },
+      });
+
+      const context = {
+        type: "INITIAL_STOCK",
+        actorUserId: session.id,
+        actorName: session.name,
+        actorEmail: session.email,
+        reason: "Estoque informado no cadastro do produto",
+      };
+      await recordInventorySnapshot(tx, {
+        productId: product.id,
+        productName: product.name,
+        previousStock: 0,
+        newStock: product.inventory,
+      }, context);
+      for (const variant of product.variants) {
+        await recordInventorySnapshot(tx, {
+          productId: product.id,
+          variantId: variant.id,
+          productName: product.name,
+          variantName: variant.label,
+          sku: variant.sku,
+          previousStock: 0,
+          newStock: variant.inventory,
+        }, context);
+      }
+      return product;
     });
 
-    return NextResponse.json(newProduct, { status: 201 });
+    return NextResponse.json(toStorefrontProduct(newProduct), { status: 201 });
   } catch (error) {
     console.error(error);
+    if (String(error).includes("Unique constraint")) {
+      return jsonError("Slug ou SKU ja esta em uso", 409);
+    }
     return NextResponse.json(
       { error: "Erro ao criar o produto" },
       { status: 500 }

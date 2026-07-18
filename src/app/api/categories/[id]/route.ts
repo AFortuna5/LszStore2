@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { isNonEmptyString, isRecord, jsonError, readJson, slugify } from "@/lib/api";
-import { prisma } from "@/lib/prisma";
+import { isNonEmptyString, isRecord, jsonError, readJson, slugify } from "@/server/http/api";
+import { readSessionFromRequest } from "@/server/auth/session";
+import { prisma } from "@/server/database/client";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -28,6 +29,11 @@ export async function GET(_req: Request, context: RouteContext) {
 
 export async function PATCH(req: Request, context: RouteContext) {
   try {
+    const session = readSessionFromRequest(req);
+    if (!session || session.role !== "ADMIN") {
+      return jsonError("Nao autorizado", 401);
+    }
+
     const { id } = await context.params;
     const body = await readJson(req);
 
@@ -60,12 +66,20 @@ export async function PATCH(req: Request, context: RouteContext) {
     return NextResponse.json(category);
   } catch (error) {
     console.error(error);
+    if (String(error).includes("Unique constraint")) {
+      return jsonError("Ja existe uma categoria com este endereco", 409);
+    }
     return jsonError("Erro ao atualizar a categoria", 500);
   }
 }
 
 export async function DELETE(_req: Request, context: RouteContext) {
   try {
+    const session = readSessionFromRequest(_req);
+    if (!session || session.role !== "ADMIN") {
+      return jsonError("Nao autorizado", 401);
+    }
+
     const { id } = await context.params;
 
     await prisma.category.delete({
@@ -75,6 +89,9 @@ export async function DELETE(_req: Request, context: RouteContext) {
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     console.error(error);
+    if (String(error).includes("Foreign key constraint")) {
+      return jsonError("Esta categoria possui produtos e nao pode ser excluida", 409);
+    }
     return jsonError("Erro ao remover a categoria", 500);
   }
 }

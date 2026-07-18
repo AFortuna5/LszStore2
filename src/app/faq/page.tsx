@@ -1,4 +1,4 @@
-import SiteShell from "@/components/layout/SiteShell";
+import SiteShell from "@/templates/layout/SiteShell";
 
 const faqs = [
   ["Qual o prazo de envio?", "O prazo depende do CEP e aparece no checkout."],

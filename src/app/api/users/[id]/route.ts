@@ -1,8 +1,9 @@
 import { randomBytes, scryptSync } from "crypto";
 import { NextResponse } from "next/server";
 
-import { isNonEmptyString, isRecord, jsonError, readJson } from "@/lib/api";
-import { prisma } from "@/lib/prisma";
+import { isNonEmptyString, isRecord, jsonError, readJson } from "@/server/http/api";
+import { readSessionFromRequest } from "@/server/auth/session";
+import { prisma } from "@/server/database/client";
 
 const publicUserSelect = {
   id: true,
@@ -19,6 +20,11 @@ type RouteContext = {
 
 export async function GET(_req: Request, context: RouteContext) {
   try {
+    const session = readSessionFromRequest(_req);
+    if (!session || session.role !== "ADMIN") {
+      return jsonError("Nao autorizado", 401);
+    }
+
     const { id } = await context.params;
     const user = await prisma.user.findUnique({
       where: { id },
@@ -50,6 +56,11 @@ export async function GET(_req: Request, context: RouteContext) {
 
 export async function PATCH(req: Request, context: RouteContext) {
   try {
+    const session = readSessionFromRequest(req);
+    if (!session || session.role !== "ADMIN") {
+      return jsonError("Nao autorizado", 401);
+    }
+
     const { id } = await context.params;
     const body = await readJson(req);
 
@@ -101,6 +112,11 @@ export async function PATCH(req: Request, context: RouteContext) {
 
 export async function DELETE(_req: Request, context: RouteContext) {
   try {
+    const session = readSessionFromRequest(_req);
+    if (!session || session.role !== "ADMIN") {
+      return jsonError("Nao autorizado", 401);
+    }
+
     const { id } = await context.params;
 
     await prisma.user.delete({

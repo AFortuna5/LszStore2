@@ -1,5 +1,5 @@
-import CartClient from "@/components/cart/CartClient";
-import SiteShell from "@/components/layout/SiteShell";
+import CartClient from "@/templates/cart/CartClient";
+import SiteShell from "@/templates/layout/SiteShell";
 
 export default function CartPage() {
   return (

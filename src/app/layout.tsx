@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Poppins, Montserrat } from "next/font/google";
 import "./globals.css";
+import { env } from "@/server/config/env";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -19,8 +20,18 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(env.appUrl),
   title: "LSZ Store | Produtos Premium e Exclusivos",
   description: "Conheça a LSZ Store. Produtos exclusivos, roupas, acessórios, perfumes e eletrônicos com envio para todo Brasil.",
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    siteName: "LSZ Store",
+    title: "LSZ Store | Produtos Premium e Exclusivos",
+    description: "Produtos selecionados com entrega para todo o Brasil.",
+    images: ["/logo-lsz-store.png"],
+  },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({

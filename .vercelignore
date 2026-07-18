@@ -1,0 +1,9 @@
+dev.db
+.env
+.env.local
+.env.*
+compose.yaml
+tests/
+coverage/
+.github/
+scripts/migrate-sqlite-to-postgres.js
