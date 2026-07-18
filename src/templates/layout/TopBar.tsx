@@ -21,7 +21,7 @@ export default function TopBar() {
   }, []);
 
   return (
-    <div className="bg-neon-blue text-black font-semibold text-xs md:text-sm py-2 overflow-hidden flex justify-center items-center h-8">
+    <div className="fixed inset-x-0 top-0 z-[60] flex h-8 items-center justify-center overflow-hidden bg-black py-2 text-xs font-semibold uppercase tracking-[0.14em] text-white md:text-sm">
       <AnimatePresence mode="wait">
         <motion.div
           key={index}
@@ -29,8 +29,9 @@ export default function TopBar() {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -20, opacity: 0 }}
           transition={{ duration: 0.5 }}
-          className="absolute"
+          className="absolute flex items-center gap-2"
         >
+          <span className="h-1.5 w-1.5 rounded-full bg-neon-blue" />
           {messages[index]}
         </motion.div>
       </AnimatePresence>

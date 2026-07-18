@@ -1,74 +1,51 @@
-"use client";
-
-import { motion } from "framer-motion";
+import { ArrowUpRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 
-import type { StorefrontCategory } from "@/shared/storefront";
+import type { StorefrontCategory, StorefrontProduct } from "@/shared/storefront";
 
 const categoryImages: Record<string, string> = {
-  Camisetas: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=800&auto=format&fit=crop",
-  Moletons: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&w=800&auto=format&fit=crop",
-  Perfumes: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=800&auto=format&fit=crop",
-  Acessorios: "https://images.unsplash.com/photo-1622434641406-a158123450f9?q=80&w=800&auto=format&fit=crop",
-  Eletronicos: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=800&auto=format&fit=crop",
+  camisetas: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=900&q=82",
+  moletons: "https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&w=900&q=82",
+  perfumes: "https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&w=900&q=82",
+  acessorios: "https://images.unsplash.com/photo-1622434641406-a158123450f9?auto=format&fit=crop&w=900&q=82",
+  eletronicos: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=900&q=82",
+  tenis: "https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=900&q=82",
 };
 
-export default function Categories() {
-  const [categories, setCategories] = useState<StorefrontCategory[]>([]);
+function normalize(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
 
-  useEffect(() => {
-    fetch("/api/categories")
-      .then((response) => response.json())
-      .then((data) => setCategories(Array.isArray(data) ? data : []))
-      .catch(() => setCategories([]));
-  }, []);
+export default function Categories({ categories, products }: { categories: StorefrontCategory[]; products: StorefrontProduct[] }) {
+  if (categories.length === 0) return null;
 
   return (
-    <section className="bg-black py-20">
-      <div className="container mx-auto px-4 md:px-6">
-        <div className="mb-12 text-center">
-          <h3 className="mb-2 font-montserrat text-3xl font-bold uppercase tracking-wider text-white md:text-4xl">
-            Nossas <span className="text-neon-blue">Categorias</span>
-          </h3>
-          <div className="mx-auto h-1 w-24 rounded-full bg-neon-blue" />
+    <section className="bg-[#f4f4f1] py-16 md:py-24">
+      <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-10">
+        <div className="mb-10 text-center md:mb-14">
+          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.24em] text-neon-blue">Encontre seu estilo</p>
+          <h2 className="font-montserrat text-3xl font-black uppercase tracking-[-0.05em] text-black md:text-5xl">Compre por categoria</h2>
         </div>
 
-        <div className="grid auto-rows-[250px] grid-cols-1 gap-4 md:auto-rows-[300px] md:grid-cols-3 md:gap-6">
-          {categories.map((category, i) => (
-            <Link
-              key={category.slug}
-              href={`/categoria/${category.slug}`}
-              className="group relative overflow-hidden rounded-lg"
-            >
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="relative h-full w-full"
-              >
-                <Image
-                  src={categoryImages[category.name] ?? categoryImages.Camisetas}
-                  alt={category.name}
-                  fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-110"
-                  sizes="(min-width: 768px) 33vw, 100vw"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent transition-opacity duration-500 group-hover:opacity-90" />
-                <div className="absolute bottom-0 left-0 w-full translate-y-2 p-6 transition-transform duration-500 group-hover:translate-y-0">
-                  <h4 className="font-poppins text-2xl font-bold tracking-wide text-white">
-                    {category.name}
-                  </h4>
-                  <p className="mt-2 text-sm uppercase tracking-wider text-neon-blue">
-                    {category.productCount} pecas
-                  </p>
-                  <div className="mt-2 h-0.5 w-0 bg-neon-blue transition-all duration-500 group-hover:w-16" />
+        <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-5">
+          {categories.slice(0, 5).map((category) => {
+            const productImage = products.find((product) => product.categorySlug === category.slug)?.image;
+            const image = productImage ?? categoryImages[normalize(category.name)] ?? categoryImages.camisetas;
+            return (
+              <Link key={category.id} href={`/categoria/${category.slug}`} className="group relative aspect-[4/5] overflow-hidden bg-neutral-200">
+                <Image src={image} alt={category.name} fill className="object-cover transition-transform duration-700 group-hover:scale-105" sizes="(min-width: 1024px) 20vw, (min-width: 768px) 33vw, 50vw" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/5 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4 text-white sm:p-5">
+                  <div>
+                    <h3 className="font-montserrat text-sm font-black uppercase sm:text-lg">{category.name}</h3>
+                    <p className="mt-1 text-[10px] uppercase tracking-wider text-white/70">{category.productCount} {category.productCount === 1 ? "produto" : "produtos"}</p>
+                  </div>
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-black transition-colors group-hover:bg-neon-blue"><ArrowUpRight size={16} /></span>
                 </div>
-              </motion.div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       </div>
     </section>

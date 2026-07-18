@@ -1,55 +1,54 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Mail } from "lucide-react";
-import { useState } from "react";
+import { ArrowRight } from "lucide-react";
+import { FormEvent, useState } from "react";
 
 export default function Newsletter() {
   const [status, setStatus] = useState("");
-  async function subscribe(formData: FormData) {
-    setStatus("Enviando...");
-    const response = await fetch("/api/newsletter", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: formData.get("email") }) });
-    const result = await response.json();
-    setStatus(response.ok ? "Cadastro realizado. Bem-vindo a LSZ!" : result.error ?? "Nao foi possivel cadastrar");
+  const [loading, setLoading] = useState(false);
+
+  async function subscribe(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+    setLoading(true);
+    setStatus("");
+
+    try {
+      const response = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.get("email") }),
+      });
+      const result = await response.json();
+      setStatus(response.ok ? "Cadastro realizado. Bem-vindo à LSZ!" : result.error ?? "Não foi possível cadastrar.");
+      if (response.ok) form.reset();
+    } catch {
+      setStatus("Não foi possível cadastrar agora. Tente novamente.");
+    } finally {
+      setLoading(false);
+    }
   }
+
   return (
-    <section className="py-24 bg-black border-b border-t border-border relative overflow-hidden">
-      {/* Background glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[300px] bg-neon-blue/5 rounded-[100%] blur-[100px] pointer-events-none" />
-      
-      <div className="container mx-auto px-4 md:px-6 relative z-10">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="max-w-3xl mx-auto text-center"
-        >
-          <Mail size={48} className="text-neon-blue mx-auto mb-6 opacity-80" />
-          <h2 className="font-montserrat font-black text-3xl md:text-5xl text-white uppercase tracking-tighter mb-4">
-            Receba Nossos <span className="text-neon-blue text-transparent bg-clip-text bg-gradient-to-r from-neon-blue to-white drop-shadow-[0_0_8px_rgba(0,163,255,0.5)]">Lançamentos</span>
-          </h2>
-          <p className="font-poppins text-silver mb-10 text-lg">
-            Cadastre-se para receber acesso antecipado a coleções exclusivas e promoções secretas diretas no seu email.
-          </p>
-          
-          <form className="flex flex-col sm:flex-row gap-3 max-w-xl mx-auto" action={subscribe}>
-            <input 
-              name="email"
-              type="email" 
-              placeholder="Seu melhor e-mail" 
-              className="flex-grow bg-dark-blue border border-border focus:border-neon-blue rounded px-6 py-4 text-white font-inter outline-none transition-colors"
-              required
-            />
-            <button 
-              type="submit"
-              className="bg-neon-blue text-black font-bold font-inter px-8 py-4 rounded hover:bg-white transition-all uppercase tracking-wider whitespace-nowrap"
-            >
-              Cadastrar
+    <section className="relative overflow-hidden bg-neon-blue px-4 py-16 text-black sm:px-6 md:py-24 lg:px-10">
+      <div className="pointer-events-none absolute -right-16 -top-36 font-montserrat text-[18rem] font-black leading-none text-white/15">LSZ</div>
+      <div className="relative mx-auto grid max-w-[1300px] items-end gap-10 lg:grid-cols-[1fr_0.85fr]">
+        <div>
+          <p className="mb-4 text-[10px] font-bold uppercase tracking-[0.25em]">Entre para a lista</p>
+          <h2 className="max-w-3xl font-montserrat text-4xl font-black uppercase leading-[0.92] tracking-[-0.06em] sm:text-5xl md:text-6xl">Novidades primeiro. Direto no seu e-mail.</h2>
+        </div>
+        <div>
+          <p className="mb-5 max-w-lg text-sm leading-6 text-black/70">Receba lançamentos, reposições e condições especiais da LSZ sem precisar procurar.</p>
+          <form onSubmit={subscribe} className="flex border-b-2 border-black">
+            <label htmlFor="newsletter-email" className="sr-only">Seu e-mail</label>
+            <input id="newsletter-email" name="email" type="email" placeholder="SEU MELHOR E-MAIL" className="min-w-0 flex-1 bg-transparent px-0 py-4 text-sm font-semibold text-black outline-none placeholder:text-black/60" required />
+            <button type="submit" disabled={loading} className="flex items-center gap-2 px-2 text-xs font-black uppercase tracking-[0.14em] disabled:opacity-60">
+              {loading ? "Enviando" : "Cadastrar"} <ArrowRight size={17} />
             </button>
           </form>
-          {status && <p className="mt-4 text-sm text-neon-blue">{status}</p>}
-        </motion.div>
+          <p className="mt-3 min-h-5 text-xs font-medium" aria-live="polite">{status}</p>
+        </div>
       </div>
     </section>
   );

@@ -1,63 +1,49 @@
-"use client";
-
-import { motion } from "framer-motion";
+import { ArrowRight } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
+
+const heroImage = "https://images.unsplash.com/photo-1550246140-5119ae4790b8?auto=format&fit=crop&w=1800&q=88";
 
 export default function Hero() {
   return (
-    <section className="relative h-screen flex items-center justify-center overflow-hidden">
-      {/* Background Image / Overlay */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop')" }}
-      >
-        <div className="absolute inset-0 bg-black/70 bg-gradient-to-t from-black via-black/50 to-transparent z-10" />
-      </div>
+    <section className="relative min-h-[690px] overflow-hidden bg-[#f4f4f1] pt-28 lg:min-h-[760px]">
+      <div className="mx-auto grid min-h-[578px] max-w-[1600px] lg:grid-cols-[44%_56%] lg:min-h-[648px]">
+        <div className="relative z-10 flex flex-col justify-center px-5 py-14 sm:px-10 lg:px-14 xl:px-20">
+          <p className="mb-5 flex items-center gap-3 text-xs font-bold uppercase tracking-[0.24em] text-neutral-600">
+            <span className="h-px w-10 bg-neon-blue" /> Nova seleção LSZ
+          </p>
+          <h1 className="max-w-2xl font-montserrat text-[clamp(3.3rem,7vw,7.7rem)] font-black uppercase leading-[0.82] tracking-[-0.085em] text-black">
+            Vista sua
+            <span className="block text-neon-blue">atitude.</span>
+          </h1>
+          <p className="mt-7 max-w-md font-poppins text-sm leading-7 text-neutral-600 sm:text-base">
+            Peças e produtos escolhidos para quem transforma estilo em identidade. Novidades, exclusividade e entrega para todo o Brasil.
+          </p>
+          <div className="mt-9 flex flex-wrap items-center gap-5">
+            <Link href="/produtos" className="inline-flex items-center gap-3 bg-black px-6 py-4 text-xs font-bold uppercase tracking-[0.16em] text-white transition-colors hover:bg-neon-blue hover:text-black sm:px-7">
+              Comprar agora <ArrowRight size={17} />
+            </Link>
+            <Link href="/novidades" className="border-b border-black pb-1 text-xs font-bold uppercase tracking-[0.16em] text-black transition-colors hover:border-neon-blue hover:text-neon-blue">
+              Ver novidades
+            </Link>
+          </div>
+        </div>
 
-      {/* Content */}
-      <div className="relative z-20 text-center px-4 max-w-4xl mx-auto flex flex-col items-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-          className="mb-6 relative"
-        >
-          {/* Subtle neon glow behind the title */}
-          <div className="absolute -inset-4 bg-neon-blue/20 blur-3xl rounded-full" />
-          <h2 className="font-montserrat font-black text-6xl md:text-8xl lg:text-9xl tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white to-silver drop-shadow-[0_0_15px_rgba(0,163,255,0.3)]">
-            LSZ STORE
-          </h2>
-        </motion.div>
-
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.3 }}
-          className="font-poppins text-lg md:text-2xl text-silver mb-10 max-w-2xl"
-        >
-          Os melhores produtos selecionados para você. Exclusividade, tecnologia e atitude.
-        </motion.p>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.5 }}
-          className="flex flex-col sm:flex-row gap-4"
-        >
-          <Link
-            href="/produtos"
-            className="group relative px-8 py-4 bg-neon-blue text-black font-bold font-inter rounded hover:bg-white transition-all duration-300 overflow-hidden"
-          >
-            <span className="relative z-10 uppercase tracking-wider">Comprar Agora</span>
-            <div className="absolute inset-0 bg-white scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-300 ease-out z-0" />
-          </Link>
-          <Link
-            href="/colecoes"
-            className="px-8 py-4 bg-transparent border border-silver text-white font-bold font-inter rounded hover:border-neon-blue hover:text-neon-blue hover:shadow-[0_0_15px_rgba(0,163,255,0.3)] transition-all duration-300 uppercase tracking-wider"
-          >
-            Ver Coleção
-          </Link>
-        </motion.div>
+        <div className="relative min-h-[460px] overflow-hidden lg:min-h-full">
+          <Image
+            src={heroImage}
+            alt="Moda urbana LSZ Store"
+            fill
+            priority
+            className="object-cover object-center"
+            sizes="(min-width: 1024px) 56vw, 100vw"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#f4f4f1] via-transparent to-transparent opacity-20 lg:opacity-70" />
+          <div className="absolute bottom-6 right-6 bg-white/95 px-5 py-4 text-black shadow-xl backdrop-blur sm:bottom-10 sm:right-10">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500">LSZ Selection</p>
+            <p className="mt-1 font-montserrat text-lg font-black uppercase">Estilo sem padrão</p>
+          </div>
+        </div>
       </div>
     </section>
   );

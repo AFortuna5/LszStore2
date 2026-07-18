@@ -25,6 +25,7 @@ async function getSessionUser() {
 
 export default function Header() {
   const pathname = usePathname();
+  const isHome = pathname === "/";
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
@@ -96,41 +97,53 @@ export default function Header() {
   return (
     <header
       className={`fixed top-8 w-full z-50 transition-all duration-300 ${
-        isScrolled
+        isHome
+          ? "border-b border-black/10 bg-white/95 text-black shadow-sm backdrop-blur-md"
+          : isScrolled
           ? "bg-dark-blue/90 backdrop-blur-md border-b border-border shadow-[0_0_15px_rgba(0,163,255,0.1)]"
           : "bg-transparent"
       }`}
     >
       <div className="container mx-auto px-4 md:px-6">
-        <div className="flex items-center justify-between h-20">
+        <div className="relative flex h-20 items-center justify-between">
           {/* Mobile Menu Toggle */}
           <button
-            className="md:hidden text-white hover:text-neon-blue transition-colors"
+            className={`transition-colors lg:hidden ${isHome ? "text-black hover:text-neon-blue" : "text-white hover:text-neon-blue"}`}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? "Fechar menu" : "Abrir menu"}
+            aria-expanded={mobileMenuOpen}
           >
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
 
           {/* Logo */}
-          <Link href="/" className="relative block h-14 w-36 flex-shrink-0 md:h-16 md:w-44" aria-label="LSZ Store">
-            <Image
-              src="/logo-lsz-store.png"
-              alt="LSZ Store"
-              fill
-              unoptimized
-              priority
-              className="object-contain"
-              sizes="(min-width: 768px) 176px, 144px"
-            />
-          </Link>
+          {isHome ? (
+            <Link href="/" className="absolute left-1/2 -translate-x-1/2 font-montserrat text-xl font-black tracking-[-0.08em] text-black lg:static lg:translate-x-0 lg:text-2xl" aria-label="LSZ Store">
+              LSZ <span className="text-neon-blue">STORE.</span>
+            </Link>
+          ) : (
+            <Link href="/" className="relative block h-14 w-36 flex-shrink-0 md:h-16 md:w-44" aria-label="LSZ Store">
+              <Image
+                src="/logo-lsz-store.png"
+                alt="LSZ Store"
+                fill
+                unoptimized
+                priority
+                className="object-contain"
+                sizes="(min-width: 768px) 176px, 144px"
+              />
+            </Link>
+          )}
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden items-center gap-5 lg:flex xl:gap-8">
             {menuItems.map((item) => (
               <Link
                 key={item.label}
                 href={item.href}
-                className="font-poppins text-sm text-silver hover:text-neon-blue hover:drop-shadow-[0_0_8px_rgba(0,163,255,0.8)] transition-all"
+                className={`font-poppins text-sm transition-colors hover:text-neon-blue ${
+                  isHome ? "text-neutral-700" : "text-silver"
+                }`}
               >
                 {item.label}
               </Link>
@@ -147,17 +160,17 @@ export default function Header() {
           </nav>
 
           {/* Icons */}
-          <div className="flex items-center gap-4 md:gap-6">
-            <Link href="/buscar" className="text-white hover:text-neon-blue transition-colors" aria-label="Buscar">
+          <div className={`flex items-center gap-4 md:gap-6 ${isHome ? "absolute right-0 lg:static" : ""}`}>
+            <Link href="/buscar" className={`transition-colors hover:text-neon-blue ${isHome ? "hidden text-black sm:block" : "text-white"}`} aria-label="Buscar">
               <Search size={20} />
             </Link>
-            <Link href="/carrinho" className="text-white hover:text-neon-blue transition-colors relative" aria-label="Carrinho">
+            <Link href="/carrinho" className={`relative transition-colors hover:text-neon-blue ${isHome ? "text-black" : "text-white"}`} aria-label="Carrinho">
               <ShoppingCart size={20} />
               <span className="absolute -top-2 -right-2 bg-neon-blue text-black text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">
                 {cartCount}
               </span>
             </Link>
-            <Link href={sessionUser ? "/minha-conta" : "/login"} className="hidden md:block text-white hover:text-neon-blue transition-colors" aria-label={sessionUser ? `Minha conta: ${sessionUser.name}` : "Entrar"}>
+            <Link href={sessionUser ? "/minha-conta" : "/login"} className={`hidden transition-colors hover:text-neon-blue md:block ${isHome ? "text-black" : "text-white"}`} aria-label={sessionUser ? `Minha conta: ${sessionUser.name}` : "Entrar"}>
               <User size={20} />
             </Link>
           </div>
@@ -171,7 +184,7 @@ export default function Header() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-dark-blue border-b border-border"
+            className={`border-b lg:hidden ${isHome ? "border-black/10 bg-white" : "border-border bg-dark-blue"}`}
           >
             <nav className="flex flex-col container mx-auto px-4 py-4 gap-4">
               {menuItems.map((item) => (
@@ -179,13 +192,13 @@ export default function Header() {
                   key={item.label}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="font-poppins text-lg text-white hover:text-neon-blue"
+                  className={`font-poppins text-lg hover:text-neon-blue ${isHome ? "text-black" : "text-white"}`}
                 >
                   {item.label}
                 </Link>
               ))}
-              <div className="h-px bg-border my-2" />
-              <Link href="/minha-conta" className="flex items-center gap-2 text-white hover:text-neon-blue">
+              <div className={`my-2 h-px ${isHome ? "bg-black/10" : "bg-border"}`} />
+              <Link href={sessionUser ? "/minha-conta" : "/login"} className={`flex items-center gap-2 hover:text-neon-blue ${isHome ? "text-black" : "text-white"}`}>
                 <User size={20} />
                 <span className="font-poppins">Minha Conta</span>
               </Link>

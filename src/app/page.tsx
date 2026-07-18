@@ -1,28 +1,46 @@
-import TopBar from "@/templates/layout/TopBar";
-import Header from "@/templates/layout/Header";
-import Hero from "@/templates/home/Hero";
 import Categories from "@/templates/home/Categories";
+import EditorialBanner from "@/templates/home/EditorialBanner";
 import FeaturedProducts from "@/templates/home/FeaturedProducts";
-import BestSellers from "@/templates/home/BestSellers";
-import PremiumSection from "@/templates/home/PremiumSection";
-import Testimonials from "@/templates/home/Testimonials";
-import InstagramSection from "@/templates/home/Instagram";
+import Hero from "@/templates/home/Hero";
 import Newsletter from "@/templates/home/Newsletter";
+import StoreBenefits from "@/templates/home/StoreBenefits";
 import Footer from "@/templates/layout/Footer";
+import Header from "@/templates/layout/Header";
+import TopBar from "@/templates/layout/TopBar";
+import { getStorefrontCategories, getStorefrontProducts } from "@/server/repositories/catalog";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const [products, categories] = await Promise.all([
+    getStorefrontProducts().catch(() => []),
+    getStorefrontCategories().catch(() => []),
+  ]);
+  const featured = products.filter((product) => product.isFeatured);
+  const newProducts = products.filter((product) => product.isNew);
+
   return (
     <>
       <TopBar />
       <Header />
-      <main className="flex-1">
+      <main className="flex-1 bg-white text-black">
         <Hero />
-        <Categories />
-        <FeaturedProducts />
-        <PremiumSection />
-        <BestSellers />
-        <Testimonials />
-        <InstagramSection />
+        <StoreBenefits />
+        <FeaturedProducts
+          products={(featured.length > 0 ? featured : products).slice(0, 4)}
+          eyebrow="Escolhas da loja"
+          title="Destaques LSZ"
+          description="Os produtos que estão no centro da nossa curadoria agora."
+        />
+        <Categories categories={categories} products={products} />
+        <EditorialBanner />
+        <FeaturedProducts
+          products={(newProducts.length > 0 ? newProducts : products).slice(0, 4)}
+          eyebrow="Acabou de chegar"
+          title="Novidades"
+          description="Novos itens para atualizar o seu estilo e descobrir outras possibilidades."
+          tone="soft"
+        />
         <Newsletter />
       </main>
       <Footer />
