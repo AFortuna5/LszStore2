@@ -8,14 +8,14 @@ type BrandLogoProps = {
 
 export default function BrandLogo({ className = "", priority = false, sizes = "160px" }: BrandLogoProps) {
   return (
-    <span className={`relative inline-block shrink-0 overflow-hidden bg-dark-blue ${className}`}>
+    <span className={`relative inline-block shrink-0 overflow-hidden ${className}`}>
       <Image
-        src="/logo-lsz-store.png"
+        src="/logo-lsz-store-transparent.png"
         alt="LSZ Store"
         fill
         unoptimized
         priority={priority}
-        className="scale-[1.32] object-cover"
+        className="object-contain"
         sizes={sizes}
       />
     </span>

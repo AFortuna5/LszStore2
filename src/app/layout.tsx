@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     siteName: "LSZ Store",
     title: "LSZ Store | Produtos Premium e Exclusivos",
     description: "Produtos selecionados com entrega para todo o Brasil.",
-    images: ["/logo-lsz-store.png"],
+    images: ["/logo-lsz-store-transparent.png"],
   },
   twitter: { card: "summary_large_image" },
 };

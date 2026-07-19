@@ -23,7 +23,7 @@ export default function Footer() {
           <div>
             <Link href="/" className="relative mb-6 block h-20 w-52" aria-label="LSZ Store">
               <Image
-                src="/logo-lsz-store.png"
+                src="/logo-lsz-store-transparent.png"
                 alt="LSZ Store"
                 fill
                 unoptimized
