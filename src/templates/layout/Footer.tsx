@@ -2,6 +2,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { MessagesSquare, Phone, MapPin, Mail } from "lucide-react";
 
+import { storeContact } from "@/shared/store-contact";
+
 const InstagramIcon = ({ size = 24, className = "" }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
@@ -11,8 +13,6 @@ const InstagramIcon = ({ size = 24, className = "" }) => (
 );
 
 export default function Footer() {
-  const phone = process.env.NEXT_PUBLIC_STORE_PHONE ?? "(11) 99999-9999";
-  const whatsapp = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "5511999999999";
   const instagram = process.env.NEXT_PUBLIC_INSTAGRAM_URL ?? "https://instagram.com/lsz.storee";
   return (
     <footer className="bg-black pt-20 pb-10 border-t border-border">
@@ -38,7 +38,7 @@ export default function Footer() {
               <a href={instagram} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-dark-blue flex items-center justify-center text-silver hover:text-white hover:bg-neon-blue transition-all">
                 <InstagramIcon size={18} />
               </a>
-              <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-dark-blue flex items-center justify-center text-silver hover:text-white hover:bg-neon-blue transition-all">
+              <a href={`https://wa.me/${storeContact.whatsapp}`} target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full bg-dark-blue flex items-center justify-center text-silver hover:text-white hover:bg-neon-blue transition-all">
                 <MessagesSquare size={18} /> {/* Represents TikTok / Social */}
               </a>
             </div>
@@ -76,21 +76,21 @@ export default function Footer() {
                 <Phone size={18} className="text-neon-blue shrink-0 mt-0.5" />
                 <div>
                   <span className="block font-bold text-white mb-1">WhatsApp</span>
-                  <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noreferrer" className="hover:text-neon-blue transition-colors">{phone}</a>
+                  <a href={`https://wa.me/${storeContact.whatsapp}`} target="_blank" rel="noreferrer" className="hover:text-neon-blue transition-colors">{storeContact.phone}</a>
                 </div>
               </li>
               <li className="flex items-start gap-3">
                 <Mail size={18} className="text-neon-blue shrink-0 mt-0.5" />
                 <div>
                   <span className="block font-bold text-white mb-1">E-mail</span>
-                  <a href="mailto:contato@lszstore.com.br" className="hover:text-neon-blue transition-colors">contato@lszstore.com.br</a>
+                  <a href={`mailto:${storeContact.email}`} className="hover:text-neon-blue transition-colors">{storeContact.email}</a>
                 </div>
               </li>
               <li className="flex items-start gap-3">
                 <MapPin size={18} className="text-neon-blue shrink-0 mt-0.5" />
                 <div>
                   <span className="block font-bold text-white mb-1">Localização</span>
-                  <span>São Paulo, SP - Envio para todo o Brasil</span>
+                  <span>{storeContact.location}</span>
                 </div>
               </li>
             </ul>

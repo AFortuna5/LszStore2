@@ -1,12 +1,12 @@
 "use client";
 
-import { Camera, Mail, MessageCircle, Phone } from "lucide-react";
+import { Camera, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { useState } from "react";
 
+import { storeContact } from "@/shared/store-contact";
 import SiteShell from "@/templates/layout/SiteShell";
 
 export default function ContactPage() {
-  const phone = process.env.NEXT_PUBLIC_STORE_PHONE ?? "(11) 99999-9999";
   const [status, setStatus] = useState("");
   async function sendContact(formData: FormData) {
     setStatus("Enviando...");
@@ -26,8 +26,9 @@ export default function ContactPage() {
               Fale conosco
             </h1>
             <div className="mt-8 space-y-4 text-silver">
-              <p className="flex gap-3"><Phone className="text-neon-blue" /> {phone}</p>
-              <p className="flex gap-3"><Mail className="text-neon-blue" /> contato@lszstore.com.br</p>
+              <p className="flex gap-3"><Phone className="text-neon-blue" /> <a href={`https://wa.me/${storeContact.whatsapp}`} target="_blank" rel="noreferrer" className="hover:text-neon-blue">{storeContact.phone}</a></p>
+              <p className="flex gap-3"><Mail className="text-neon-blue" /> <a href={`mailto:${storeContact.email}`} className="hover:text-neon-blue">{storeContact.email}</a></p>
+              <p className="flex gap-3"><MapPin className="text-neon-blue" /> {storeContact.location}</p>
               <p className="flex gap-3"><Camera className="text-neon-blue" /> @lsz.storee</p>
             </div>
           </div>
