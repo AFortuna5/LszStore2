@@ -89,10 +89,10 @@ export async function PATCH(req: Request, context: RouteContext) {
     }
 
     if ("description" in body) {
-      if (!isNonEmptyString(body.description)) {
+      if (body.description !== undefined && body.description !== null && typeof body.description !== "string") {
         return jsonError("Descricao invalida");
       }
-      data.description = body.description.trim();
+      data.description = isNonEmptyString(body.description) ? body.description.trim() : "";
     }
 
     if ("price" in body) {

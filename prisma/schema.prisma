@@ -81,6 +81,14 @@ model Product {
   inventoryMovements InventoryMovement[]
 }
 
+model UploadedImage {
+  id        String   @id @default(cuid())
+  mimeType  String
+  data      Bytes
+  size      Int
+  createdAt DateTime @default(now())
+}
+
 model ProductVariant {
   id                 String              @id @default(cuid())
   productId          String

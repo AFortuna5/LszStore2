@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Boxes, ClipboardList, Pencil, Plus, Search, Tags, Trash2, X } from "lucide-react";
+import { ArrowLeft, Boxes, ClipboardList, Pencil, Plus, Search, Tags, Trash2, Upload, X } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -135,13 +135,44 @@ export default function AdminProductsClient() {
     await loadData();
   }
 
-  async function uploadImage(file: File) {
-    setUploading(true); setMessage("");
-    const form = new FormData(); form.set("file", file);
-    const response = await fetch("/api/uploads", { method: "POST", body: form });
-    const result = await response.json(); setUploading(false);
-    if (!response.ok) { setMessage(result.error ?? "Falha no upload"); return; }
-    updateDraft("images", [draft.images.trim(), result.url].filter(Boolean).join("\n"));
+  async function uploadImages(files: File[]) {
+    if (files.length === 0) return;
+    setUploading(true);
+    setMessage("");
+
+    try {
+      const uploadedUrls: string[] = [];
+      for (const file of files) {
+        const form = new FormData();
+        form.set("file", file);
+        const response = await fetch("/api/uploads", { method: "POST", body: form });
+        const result = await response.json();
+        if (!response.ok || typeof result.url !== "string") {
+          throw new Error(result.error ?? "Falha no upload");
+        }
+        uploadedUrls.push(result.url);
+      }
+
+      setDraft((current) => ({
+        ...current,
+        images: [current.images.trim(), ...uploadedUrls].filter(Boolean).join("\n"),
+      }));
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Falha no upload");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function removeImage(imageToRemove: string) {
+    setDraft((current) => ({
+      ...current,
+      images: current.images
+        .split(/\n|,/)
+        .map((image) => image.trim())
+        .filter((image) => image && image !== imageToRemove)
+        .join("\n"),
+    }));
   }
 
   async function deleteProduct(product: StorefrontProduct) {
@@ -223,12 +254,42 @@ export default function AdminProductsClient() {
               <label className="text-sm text-silver">Colecao<input required value={draft.collection} onChange={(e) => updateDraft("collection", e.target.value)} className={`mt-2 ${inputClass}`} /></label>
               <label className="text-sm text-silver">Avaliacao (0 a 5)<input type="number" min="0" max="5" step="0.1" value={draft.rating} onChange={(e) => updateDraft("rating", e.target.value)} className={`mt-2 ${inputClass}`} /></label>
               <label className="text-sm text-silver">Preco *<input required type="number" min="0" step="0.01" value={draft.price} onChange={(e) => updateDraft("price", e.target.value)} className={`mt-2 ${inputClass}`} /></label>
-              <label className="text-sm text-silver">Preco promocional<input type="number" min="0" step="0.01" value={draft.promoPrice} onChange={(e) => updateDraft("promoPrice", e.target.value)} className={`mt-2 ${inputClass}`} /></label>
+              <label className="text-sm text-silver">Preco promocional (opcional)<input type="number" min="0" step="0.01" value={draft.promoPrice} onChange={(e) => updateDraft("promoPrice", e.target.value)} className={`mt-2 ${inputClass}`} /></label>
               <label className="text-sm text-silver">Estoque geral *<input required type="number" min="0" value={draft.inventory} onChange={(e) => updateDraft("inventory", e.target.value)} className={`mt-2 ${inputClass}`} /></label>
               <div className="flex flex-wrap items-end gap-5 pb-3">{[["isNew", "Novidade"], ["isFeatured", "Destaque"], ["isPremium", "Premium"]].map(([key, label]) => <label key={key} className="flex items-center gap-2 text-sm text-white"><input type="checkbox" checked={draft[key as "isNew" | "isFeatured" | "isPremium"]} onChange={(e) => updateDraft(key as "isNew" | "isFeatured" | "isPremium", e.target.checked)} className="accent-neon-blue" /> {label}</label>)}</div>
-              <label className="text-sm text-silver md:col-span-2">Descricao *<textarea required rows={4} value={draft.description} onChange={(e) => updateDraft("description", e.target.value)} className={`mt-2 ${inputClass}`} /></label>
+              <label className="text-sm text-silver md:col-span-2">Descricao (opcional)<textarea rows={4} value={draft.description} onChange={(e) => updateDraft("description", e.target.value)} className={`mt-2 ${inputClass}`} /></label>
               <div className="grid grid-cols-4 gap-3 md:col-span-2"><label className="text-sm text-silver">Peso (kg)<input required type="number" min="0.01" step="0.01" value={draft.weight} onChange={(e) => updateDraft("weight", e.target.value)} className={`mt-2 ${inputClass}`} /></label><label className="text-sm text-silver">Largura (cm)<input required type="number" min="1" value={draft.width} onChange={(e) => updateDraft("width", e.target.value)} className={`mt-2 ${inputClass}`} /></label><label className="text-sm text-silver">Altura (cm)<input required type="number" min="1" value={draft.height} onChange={(e) => updateDraft("height", e.target.value)} className={`mt-2 ${inputClass}`} /></label><label className="text-sm text-silver">Comprimento (cm)<input required type="number" min="1" value={draft.length} onChange={(e) => updateDraft("length", e.target.value)} className={`mt-2 ${inputClass}`} /></label></div>
-              <label className="text-sm text-silver">Imagens (uma URL por linha) *<textarea required rows={5} value={draft.images} onChange={(e) => updateDraft("images", e.target.value)} className={`mt-2 ${inputClass}`} /><span className="mt-2 block">ou envie uma imagem:</span><input type="file" accept="image/*" disabled={uploading} onChange={(e) => { const file = e.target.files?.[0]; if (file) void uploadImage(file); }} className="mt-2 block w-full text-xs text-silver" />{uploading && <span className="text-xs text-neon-blue">Enviando...</span>}</label>
+              <div className="text-sm text-silver">
+                <p>Imagens *</p>
+                <label className={`mt-2 flex min-h-28 cursor-pointer flex-col items-center justify-center gap-2 rounded border border-dashed px-4 py-5 text-center transition-colors ${uploading ? "cursor-wait border-border opacity-60" : "border-neon-blue/60 hover:border-neon-blue hover:bg-neon-blue/5"}`}>
+                  <Upload className="text-neon-blue" size={24} />
+                  <span className="font-bold text-white">{uploading ? "Enviando imagem..." : "Fazer upload de uma imagem"}</span>
+                  <span className="text-xs">PNG, JPG ou WEBP de ate 4 MB</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    disabled={uploading}
+                    className="sr-only"
+                    onChange={(event) => {
+                      const input = event.currentTarget;
+                      void uploadImages(Array.from(input.files ?? [])).finally(() => { input.value = ""; });
+                    }}
+                  />
+                </label>
+                {draft.images.trim() && (
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    {draft.images.split(/\n|,/).map((image) => image.trim()).filter(Boolean).map((image) => (
+                      <div key={image} className="group relative aspect-square overflow-hidden rounded border border-border bg-black">
+                        <div className="absolute inset-0 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url("${image.replace(/"/g, "%22")}")` }} />
+                        <button type="button" onClick={() => removeImage(image)} aria-label="Remover imagem" className="absolute right-1.5 top-1.5 rounded bg-black/80 p-1.5 text-white transition-colors hover:bg-red-500">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               <label className="text-sm text-silver">Detalhes (um por linha)<textarea rows={5} value={draft.details} onChange={(e) => updateDraft("details", e.target.value)} placeholder="Material\nModelagem\nCuidados" className={`mt-2 ${inputClass}`} /></label>
             </div>
 
@@ -245,7 +306,7 @@ export default function AdminProductsClient() {
                 <label className="flex items-center gap-2 text-xs text-silver md:col-span-full"><input type="radio" name="defaultVariant" checked={variant.isDefault} onChange={() => updateDraft("variants", draft.variants.map((item, itemIndex) => ({ ...item, isDefault: itemIndex === index })))} className="accent-neon-blue" /> Variacao padrao</label>
               </div>)}</div>
             </div>
-            <div className="sticky bottom-0 mt-8 flex justify-end gap-3 border-t border-border bg-dark-blue pt-5"><button type="button" onClick={() => setEditorOpen(false)} className="rounded border border-border px-6 py-3 font-bold uppercase text-white hover:border-white">Cancelar</button><button disabled={saving} className="rounded bg-neon-blue px-6 py-3 font-bold uppercase text-black hover:bg-white disabled:opacity-50">{saving ? "Salvando..." : "Salvar produto"}</button></div>
+            <div className="sticky bottom-0 mt-8 flex justify-end gap-3 border-t border-border bg-dark-blue pt-5"><button type="button" onClick={() => setEditorOpen(false)} className="rounded border border-border px-6 py-3 font-bold uppercase text-white hover:border-white">Cancelar</button><button disabled={saving || uploading} className="rounded bg-neon-blue px-6 py-3 font-bold uppercase text-black hover:bg-white disabled:opacity-50">{uploading ? "Enviando imagem..." : saving ? "Salvando..." : "Salvar produto"}</button></div>
           </form>
         </div>
       )}

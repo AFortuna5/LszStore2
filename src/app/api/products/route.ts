@@ -115,12 +115,12 @@ export async function POST(req: Request) {
     const normalizedInventory = toPositiveInt(inventory, 0) ?? 0;
 
     if (!isNonEmptyString(name)) return jsonError("Nome e obrigatorio");
-    if (!isNonEmptyString(description)) {
-      return jsonError("Descricao e obrigatoria");
+    if (description !== undefined && description !== null && typeof description !== "string") {
+      return jsonError("Descricao invalida");
     }
     const normalizedSlug = isNonEmptyString(slug) ? slug.trim() : undefined;
     if (normalizedPrice === null) return jsonError("Preco invalido");
-    if (normalizedPromoPrice === null && promoPrice !== undefined) {
+    if (normalizedPromoPrice === null && promoPrice !== undefined && promoPrice !== null) {
       return jsonError("Preco promocional invalido");
     }
     if (!isNonEmptyString(categoryId)) {
@@ -133,7 +133,7 @@ export async function POST(req: Request) {
         data: {
         name: name.trim(),
         slug: normalizedSlug ?? name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
-        description: description.trim(),
+        description: isNonEmptyString(description) ? description.trim() : "",
         price: normalizedPrice,
         promoPrice: normalizedPromoPrice,
         brand: isNonEmptyString(brand) ? brand.trim() : null,
