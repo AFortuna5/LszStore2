@@ -1,5 +1,5 @@
 import Categories from "@/templates/home/Categories";
-import EditorialBanner from "@/templates/home/EditorialBanner";
+import BrandsSection from "@/templates/home/BrandsSection";
 import FeaturedProducts from "@/templates/home/FeaturedProducts";
 import Hero from "@/templates/home/Hero";
 import Newsletter from "@/templates/home/Newsletter";
@@ -36,7 +36,7 @@ export default async function Home() {
           description="Os produtos que estão no centro da nossa curadoria agora."
         />
         <Categories categories={categories} products={products} />
-        <EditorialBanner />
+        <BrandsSection />
         <FeaturedProducts
           products={(newProducts.length > 0 ? newProducts : products).slice(0, 4)}
           eyebrow="Acabou de chegar"

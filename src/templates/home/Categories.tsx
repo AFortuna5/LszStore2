@@ -25,7 +25,7 @@ export default function Categories({ categories, products }: { categories: Store
       <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-10">
         <div className="mb-10 text-center md:mb-14">
           <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.24em] text-neon-blue">Encontre seu estilo</p>
-          <h2 className="font-montserrat text-3xl font-black uppercase tracking-[-0.05em] text-black md:text-5xl">Compre por categoria</h2>
+          <h2 className="font-montserrat text-2xl font-black uppercase tracking-[-0.05em] text-black sm:text-3xl md:text-5xl">Compre por categoria</h2>
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 lg:grid-cols-5">

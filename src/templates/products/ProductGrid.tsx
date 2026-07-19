@@ -1,11 +1,11 @@
 import ProductCard from "@/templates/products/ProductCard";
 import { StorefrontProduct } from "@/shared/storefront";
 
-export default function ProductGrid({ products }: { products: StorefrontProduct[] }) {
+export default function ProductGrid({ products, emptyMessage = "Nenhum produto encontrado nesta selecao." }: { products: StorefrontProduct[]; emptyMessage?: string }) {
   if (products.length === 0) {
     return (
       <div className="rounded-lg border border-border bg-dark-blue p-8 text-center text-silver">
-        Nenhum produto encontrado nesta selecao.
+        {emptyMessage}
       </div>
     );
   }

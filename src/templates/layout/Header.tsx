@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Search, ShieldCheck, ShoppingCart, User, Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePathname } from "next/navigation";
-import Wordmark from "@/templates/brand/Wordmark";
+import BrandLogo from "@/templates/brand/BrandLogo";
 
 type SessionUser = {
   id: string;
@@ -90,6 +89,7 @@ export default function Header() {
     { label: "Início", href: "/" },
     { label: "Produtos", href: "/produtos" },
     { label: "Coleções", href: "/colecoes" },
+    { label: "Marcas", href: "/#marcas" },
     { label: "Novidades", href: "/novidades" },
     { label: "Promoções", href: "/promocoes" },
     { label: "Contato", href: "/contato" },
@@ -120,19 +120,11 @@ export default function Header() {
           {/* Logo */}
           {isHome ? (
             <Link href="/" className="absolute left-1/2 -translate-x-1/2 lg:static lg:translate-x-0" aria-label="LSZ Store">
-              <Wordmark className="text-xl lg:text-2xl" />
+              <BrandLogo className="h-12 w-28 lg:h-14 lg:w-36" priority sizes="(min-width: 1024px) 144px, 112px" />
             </Link>
           ) : (
-            <Link href="/" className="relative block h-14 w-36 flex-shrink-0 md:h-16 md:w-44" aria-label="LSZ Store">
-              <Image
-                src="/logo-lsz-store.png"
-                alt="LSZ Store"
-                fill
-                unoptimized
-                priority
-                className="object-contain"
-                sizes="(min-width: 768px) 176px, 144px"
-              />
+            <Link href="/" className="block" aria-label="LSZ Store">
+              <BrandLogo className="h-14 w-36 md:h-16 md:w-44" priority sizes="(min-width: 768px) 176px, 144px" />
             </Link>
           )}
 

@@ -4,6 +4,7 @@ import { ArrowLeft, Boxes, ClipboardList, Pencil, Plus, Search, Tags, Trash2, X 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { storeBrands } from "@/shared/brands";
 import { formatCurrency, type StorefrontProduct, type StorefrontVariant } from "@/shared/storefront";
 
 type Category = { id: string; name: string; slug: string; productCount: number };
@@ -217,7 +218,7 @@ export default function AdminProductsClient() {
             <div className="grid gap-5 md:grid-cols-2">
               <label className="text-sm text-silver">Nome *<input required value={draft.name} onChange={(e) => updateDraft("name", e.target.value)} className={`mt-2 ${inputClass}`} /></label>
               <label className="text-sm text-silver">Slug (URL)<input value={draft.slug} onChange={(e) => updateDraft("slug", e.target.value)} placeholder="gerado pelo nome se vazio" className={`mt-2 ${inputClass}`} /></label>
-              <label className="text-sm text-silver">Marca<input value={draft.brand} onChange={(e) => updateDraft("brand", e.target.value)} className={`mt-2 ${inputClass}`} /></label>
+              <label className="text-sm text-silver">Marca<input list="store-brands" value={draft.brand} onChange={(e) => updateDraft("brand", e.target.value)} placeholder="Selecione ou digite a marca" className={`mt-2 ${inputClass}`} /><datalist id="store-brands">{storeBrands.map((brand) => <option key={brand.slug} value={brand.name} />)}</datalist></label>
               <label className="text-sm text-silver">Categoria *<select required value={draft.categoryId} onChange={(e) => updateDraft("categoryId", e.target.value)} className={`mt-2 ${inputClass}`}><option value="">Selecione</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
               <label className="text-sm text-silver">Colecao<input required value={draft.collection} onChange={(e) => updateDraft("collection", e.target.value)} className={`mt-2 ${inputClass}`} /></label>
               <label className="text-sm text-silver">Avaliacao (0 a 5)<input type="number" min="0" max="5" step="0.1" value={draft.rating} onChange={(e) => updateDraft("rating", e.target.value)} className={`mt-2 ${inputClass}`} /></label>
