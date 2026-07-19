@@ -7,7 +7,6 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import type { StorefrontProduct } from "@/shared/storefront";
-import BrandLogo from "@/templates/brand/BrandLogo";
 
 const fallbackImage = "https://images.unsplash.com/photo-1550246140-5119ae4790b8?auto=format&fit=crop&w=1800&q=88";
 
@@ -65,8 +64,8 @@ export default function Hero({ products }: { products: StorefrontProduct[] }) {
             <span className="mt-1 block font-montserrat text-[clamp(3.5rem,4.7vw,5.4rem)] font-black italic leading-[0.82] tracking-[-0.085em]">
               Bem-vindo
             </span>
-            <span className="mt-3 flex flex-wrap items-center gap-x-3 font-montserrat text-[clamp(2rem,3vw,3.2rem)] font-medium leading-none tracking-[-0.06em] text-neutral-800">
-              à <BrandLogo className="h-14 w-32 sm:h-16 sm:w-40" priority sizes="(min-width: 640px) 160px, 128px" />
+            <span className="mt-3 flex flex-wrap items-baseline gap-x-3 font-montserrat text-[clamp(2rem,3vw,3.2rem)] font-medium leading-none tracking-[-0.06em] text-neutral-800">
+              à <span className="font-black italic tracking-[-0.085em] text-black">LSZ <span className="text-neon-blue">STORE</span></span>
             </span>
           </h1>
           <p className="mt-7 max-w-lg font-poppins text-sm leading-7 text-neutral-600 sm:text-base">
