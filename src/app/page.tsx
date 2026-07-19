@@ -18,16 +18,12 @@ export default async function Home() {
   ]);
   const featured = products.filter((product) => product.isFeatured);
   const newProducts = products.filter((product) => product.isNew);
-  const availableProducts = products.filter(
-    (product) => product.inventory > 0 || product.variants.some((variant) => variant.inventory > 0)
-  );
-
   return (
     <>
       <TopBar />
       <Header />
       <main className="min-w-0 flex-1 overflow-x-hidden bg-white text-black">
-        <Hero products={availableProducts} />
+        <Hero />
         <StoreBenefits />
         <FeaturedProducts
           products={(featured.length > 0 ? featured : products).slice(0, 4)}
