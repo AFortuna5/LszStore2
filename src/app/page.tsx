@@ -3,7 +3,6 @@ import BrandsSection from "@/templates/home/BrandsSection";
 import FeaturedProducts from "@/templates/home/FeaturedProducts";
 import Hero from "@/templates/home/Hero";
 import Newsletter from "@/templates/home/Newsletter";
-import StoreBenefits from "@/templates/home/StoreBenefits";
 import Footer from "@/templates/layout/Footer";
 import Header from "@/templates/layout/Header";
 import TopBar from "@/templates/layout/TopBar";
@@ -24,7 +23,6 @@ export default async function Home() {
       <Header />
       <main className="min-w-0 flex-1 overflow-x-hidden bg-white text-black">
         <Hero />
-        <StoreBenefits />
         <FeaturedProducts
           products={(featured.length > 0 ? featured : products).slice(0, 4)}
           eyebrow="Escolhas da loja"
