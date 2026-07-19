@@ -2,11 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 
 const products = [
-  { src: "/products/hero/armani-jacket.jpeg", alt: "Jaqueta Armani Exchange", className: "bottom-[-8%] left-[-7%] h-[44%] w-[33%] -rotate-[6deg] sm:left-[-2%]" },
-  { src: "/products/hero/tommy-hoodie.jpeg", alt: "Moletom Tommy Hilfiger", className: "bottom-[-7%] left-[21%] h-[48%] w-[34%] rotate-[3deg]" },
-  { src: "/products/hero/armani-hoodie.jpeg", alt: "Moletom Armani Exchange", className: "bottom-[-12%] right-[20%] h-[50%] w-[35%] -rotate-[3deg]" },
-  { src: "/products/hero/armani-cap.jpeg", alt: "Boné Armani Exchange", className: "bottom-[1%] right-[-5%] h-[27%] w-[28%] rotate-[8deg] sm:right-[1%]" },
-  { src: "/products/hero/tommy-cap.jpeg", alt: "Boné Tommy Hilfiger", className: "bottom-[4%] right-[14%] h-[22%] w-[25%] -rotate-[12deg]" },
+  { src: "/products/hero/armani-jacket.jpeg", alt: "Jaqueta Armani Exchange", className: "bottom-[-11%] left-[-7%] h-[54%] w-[34%] -rotate-[7deg] sm:left-[-2%]" },
+  { src: "/products/hero/tommy-hoodie.jpeg", alt: "Moletom Tommy Hilfiger", className: "bottom-[-15%] left-[20%] h-[61%] w-[38%] rotate-[3deg]" },
+  { src: "/products/hero/armani-hoodie.jpeg", alt: "Moletom Armani Exchange", className: "bottom-[-15%] right-[17%] h-[65%] w-[39%] -rotate-[3deg]" },
+  { src: "/products/hero/armani-cap.jpeg", alt: "Boné Armani Exchange", className: "bottom-[6%] right-[-6%] h-[35%] w-[33%] rotate-[8deg] sm:right-[1%]" },
+  { src: "/products/hero/tommy-cap.jpeg", alt: "Boné Tommy Hilfiger", className: "bottom-[17%] right-[15%] h-[23%] w-[24%] -rotate-[12deg]" },
 ];
 
 export default function Hero() {
@@ -26,14 +26,14 @@ export default function Hero() {
           <div className="relative mx-auto mt-5 max-w-[860px] border border-white/35 px-3 pb-10 pt-5 sm:mt-7 sm:px-6 sm:pb-16 sm:pt-8">
             <span className="pointer-events-none absolute -left-1 -top-1 h-5 w-5 border-l-2 border-t-2 border-neon-blue" />
             <span className="pointer-events-none absolute -bottom-1 -right-1 h-5 w-5 border-b-2 border-r-2 border-neon-blue" />
-            <h1 className="font-montserrat text-[clamp(4.2rem,13vw,10rem)] font-black uppercase leading-[0.68] tracking-[-0.105em] text-neon-blue [text-shadow:0_0_32px_rgba(0,163,255,0.55)]">
+            <h1 className="text-[clamp(4.6rem,14vw,11.5rem)] font-black uppercase leading-[0.62] tracking-[-0.07em] text-neon-blue [text-shadow:0_0_32px_rgba(0,163,255,0.55)]" style={{ fontFamily: "Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif" }}>
               Sejam
             </h1>
             <div className="relative mt-3">
-              <p className="font-montserrat text-[clamp(4rem,13vw,10rem)] font-black uppercase leading-[0.7] tracking-[-0.11em] text-white">
+              <p className="text-[clamp(4.4rem,14vw,11.5rem)] font-black uppercase leading-[0.64] tracking-[-0.075em] text-white" style={{ fontFamily: "Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif" }}>
                 Vindos
               </p>
-              <p className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 rotate-[-7deg] font-poppins text-[clamp(1.7rem,5vw,4rem)] font-medium italic tracking-[-0.08em] text-neon-blue drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]">
+              <p className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 rotate-[-7deg] text-[clamp(1.55rem,4.7vw,3.8rem)] font-medium italic tracking-[-0.08em] text-neon-blue drop-shadow-[0_2px_12px_rgba(0,0,0,0.8)]" style={{ fontFamily: "'Brush Script MT', 'Segoe Script', cursive" }}>
                 na nossa loja
               </p>
             </div>
