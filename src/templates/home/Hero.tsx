@@ -9,8 +9,8 @@ export default function Hero() {
         width={1536}
         height={1024}
         priority
-        className="hidden h-auto w-full md:block"
-        sizes="100vw"
+        className="mx-auto hidden h-auto w-full max-w-[996px] md:block"
+        sizes="(min-width: 996px) 996px, 100vw"
       />
       <Image
         src="/landing/lsz-hero-mobile.png"
