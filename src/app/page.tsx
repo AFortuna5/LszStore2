@@ -21,7 +21,7 @@ export default async function Home() {
     <>
       <TopBar />
       <Header />
-      <main className="min-w-0 flex-1 overflow-x-hidden bg-white text-black">
+      <main className="min-w-0 flex-1 overflow-x-hidden bg-black text-white">
         <Hero />
         <FeaturedProducts
           products={(featured.length > 0 ? featured : products).slice(0, 4)}

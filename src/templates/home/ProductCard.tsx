@@ -11,7 +11,7 @@ export default function ProductCard({ product }: { product: StorefrontProduct })
     <article className="group flex min-w-0 flex-col">
       <Link
         href={`/produto/${product.slug}`}
-        className="relative mb-4 aspect-[4/5] overflow-hidden bg-[#efefed]"
+        className="relative mb-4 aspect-[4/5] overflow-hidden bg-[#07162d]"
       >
         <Image
           src={product.image}
@@ -30,24 +30,24 @@ export default function ProductCard({ product }: { product: StorefrontProduct })
             Novo
           </span>
         )}
-        <span className="absolute bottom-3 left-3 right-3 flex translate-y-3 items-center justify-center gap-2 bg-white px-4 py-3 text-xs font-bold uppercase tracking-[0.12em] text-black opacity-0 shadow-lg transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+        <span className="absolute bottom-3 left-3 right-3 flex translate-y-3 items-center justify-center gap-2 bg-neon-blue px-4 py-3 text-xs font-bold uppercase tracking-[0.12em] text-black opacity-0 shadow-lg transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
           Ver produto <ArrowUpRight size={15} />
         </span>
       </Link>
 
-      <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-neutral-500">
+      <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-silver">
         {product.brand}
       </p>
-      <Link href={`/produto/${product.slug}`} className="line-clamp-2 min-h-11 font-poppins text-sm font-medium text-neutral-900 hover:underline">
+      <Link href={`/produto/${product.slug}`} className="line-clamp-2 min-h-11 font-poppins text-sm font-medium text-white hover:text-neon-blue hover:underline">
         {product.name}
       </Link>
       <div className="mt-2 flex flex-wrap items-baseline gap-x-2">
-        <span className="font-montserrat text-base font-bold text-black">{formatCurrency(price)}</span>
+        <span className="font-montserrat text-base font-bold text-white">{formatCurrency(price)}</span>
         {product.promoPrice && product.promoPrice < product.price && (
-          <span className="text-xs text-neutral-500 line-through">{formatCurrency(product.price)}</span>
+          <span className="text-xs text-silver line-through">{formatCurrency(product.price)}</span>
         )}
       </div>
-      <p className="mt-1 text-xs text-neutral-500">ou 3x de {formatCurrency(price / 3)} sem juros</p>
+      <p className="mt-1 text-xs text-silver">ou 3x de {formatCurrency(price / 3)} sem juros</p>
     </article>
   );
 }

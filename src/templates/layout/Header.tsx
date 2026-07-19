@@ -99,7 +99,7 @@ export default function Header() {
     <header
       className={`fixed top-8 w-full z-50 transition-all duration-300 ${
         isHome
-          ? "border-b border-black/10 bg-white/95 text-black shadow-sm backdrop-blur-md"
+          ? "border-b border-neon-blue/30 bg-[#020a20]/95 text-white shadow-[0_0_18px_rgba(0,163,255,0.12)] backdrop-blur-md"
           : isScrolled
           ? "bg-dark-blue/90 backdrop-blur-md border-b border-border shadow-[0_0_15px_rgba(0,163,255,0.1)]"
           : "bg-transparent"
@@ -109,7 +109,7 @@ export default function Header() {
         <div className="relative flex h-20 items-center justify-between">
           {/* Mobile Menu Toggle */}
           <button
-            className={`transition-colors lg:hidden ${isHome ? "text-black hover:text-neon-blue" : "text-white hover:text-neon-blue"}`}
+            className={`transition-colors lg:hidden ${isHome ? "text-white hover:text-neon-blue" : "text-white hover:text-neon-blue"}`}
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label={mobileMenuOpen ? "Fechar menu" : "Abrir menu"}
             aria-expanded={mobileMenuOpen}
@@ -135,7 +135,7 @@ export default function Header() {
                 key={item.label}
                 href={item.href}
                 className={`font-poppins text-sm transition-colors hover:text-neon-blue ${
-                  isHome ? "text-neutral-700" : "text-silver"
+                  isHome ? "text-silver" : "text-silver"
                 }`}
               >
                 {item.label}
@@ -154,16 +154,16 @@ export default function Header() {
 
           {/* Icons */}
           <div className={`flex items-center gap-4 md:gap-6 ${isHome ? "absolute right-0 lg:static" : ""}`}>
-            <Link href="/buscar" className={`transition-colors hover:text-neon-blue ${isHome ? "hidden text-black sm:block" : "text-white"}`} aria-label="Buscar">
+            <Link href="/buscar" className={`transition-colors hover:text-neon-blue ${isHome ? "hidden text-white sm:block" : "text-white"}`} aria-label="Buscar">
               <Search size={20} />
             </Link>
-            <Link href="/carrinho" className={`relative transition-colors hover:text-neon-blue ${isHome ? "text-black" : "text-white"}`} aria-label="Carrinho">
+            <Link href="/carrinho" className={`relative transition-colors hover:text-neon-blue ${isHome ? "text-white" : "text-white"}`} aria-label="Carrinho">
               <ShoppingCart size={20} />
               <span className="absolute -top-2 -right-2 bg-neon-blue text-black text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">
                 {cartCount}
               </span>
             </Link>
-            <Link href={sessionUser ? "/minha-conta" : "/login"} className={`hidden transition-colors hover:text-neon-blue md:block ${isHome ? "text-black" : "text-white"}`} aria-label={sessionUser ? `Minha conta: ${sessionUser.name}` : "Entrar"}>
+            <Link href={sessionUser ? "/minha-conta" : "/login"} className={`hidden transition-colors hover:text-neon-blue md:block ${isHome ? "text-white" : "text-white"}`} aria-label={sessionUser ? `Minha conta: ${sessionUser.name}` : "Entrar"}>
               <User size={20} />
             </Link>
           </div>
@@ -177,7 +177,7 @@ export default function Header() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className={`border-b lg:hidden ${isHome ? "border-black/10 bg-white" : "border-border bg-dark-blue"}`}
+            className={`border-b lg:hidden ${isHome ? "border-neon-blue/30 bg-[#020a20]" : "border-border bg-dark-blue"}`}
           >
             <nav className="flex flex-col container mx-auto px-4 py-4 gap-4">
               {menuItems.map((item) => (
@@ -185,13 +185,13 @@ export default function Header() {
                   key={item.label}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`font-poppins text-lg hover:text-neon-blue ${isHome ? "text-black" : "text-white"}`}
+                  className={`font-poppins text-lg hover:text-neon-blue ${isHome ? "text-white" : "text-white"}`}
                 >
                   {item.label}
                 </Link>
               ))}
-              <div className={`my-2 h-px ${isHome ? "bg-black/10" : "bg-border"}`} />
-              <Link href={sessionUser ? "/minha-conta" : "/login"} className={`flex items-center gap-2 hover:text-neon-blue ${isHome ? "text-black" : "text-white"}`}>
+              <div className={`my-2 h-px ${isHome ? "bg-neon-blue/30" : "bg-border"}`} />
+              <Link href={sessionUser ? "/minha-conta" : "/login"} className={`flex items-center gap-2 hover:text-neon-blue ${isHome ? "text-white" : "text-white"}`}>
                 <User size={20} />
                 <span className="font-poppins">Minha Conta</span>
               </Link>

@@ -20,15 +20,15 @@ export default function FeaturedProducts({
   tone = "white",
 }: FeaturedProductsProps) {
   return (
-    <section className={`py-16 md:py-24 ${tone === "white" ? "bg-white" : "bg-[#f4f4f1]"}`}>
+    <section className={`py-16 md:py-24 ${tone === "white" ? "bg-black" : "bg-[#020a20]"}`}>
       <div className="mx-auto max-w-[1500px] px-4 sm:px-6 lg:px-10">
         <div className="mb-10 flex items-end justify-between gap-6 md:mb-14">
           <div>
             <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.24em] text-neon-blue">{eyebrow}</p>
-            <h2 className="font-montserrat text-3xl font-black uppercase tracking-[-0.05em] text-black md:text-5xl">{title}</h2>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-neutral-600">{description}</p>
+            <h2 className="font-montserrat text-3xl font-black uppercase tracking-[-0.05em] text-white md:text-5xl">{title}</h2>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-silver">{description}</p>
           </div>
-          <Link href="/produtos" className="hidden items-center gap-2 border-b border-black pb-1 text-xs font-bold uppercase tracking-[0.14em] text-black transition-colors hover:border-neon-blue hover:text-neon-blue sm:flex">
+          <Link href="/produtos" className="hidden items-center gap-2 border-b border-white pb-1 text-xs font-bold uppercase tracking-[0.14em] text-white transition-colors hover:border-neon-blue hover:text-neon-blue sm:flex">
             Ver todos <ArrowRight size={15} />
           </Link>
         </div>
@@ -38,12 +38,12 @@ export default function FeaturedProducts({
             {products.slice(0, 4).map((product) => <ProductCard key={product.id} product={product} />)}
           </div>
         ) : (
-          <div className="border border-dashed border-neutral-300 bg-white px-6 py-16 text-center text-sm text-neutral-600">
+          <div className="border border-dashed border-neon-blue/40 bg-dark-blue px-6 py-16 text-center text-sm text-silver">
             Novos produtos serão publicados aqui em breve.
           </div>
         )}
 
-        <Link href="/produtos" className="mt-10 flex w-full items-center justify-center gap-2 border border-black px-6 py-4 text-xs font-bold uppercase tracking-[0.14em] text-black sm:hidden">
+        <Link href="/produtos" className="mt-10 flex w-full items-center justify-center gap-2 border border-neon-blue px-6 py-4 text-xs font-bold uppercase tracking-[0.14em] text-white sm:hidden">
           Ver todos <ArrowRight size={15} />
         </Link>
       </div>
