@@ -6,8 +6,8 @@ export default function Hero() {
       <Image
         src="/landing/lsz-hero.png"
         alt="Sejam vindos à LSZ Store"
-        width={1900}
-        height={571}
+        width={2168}
+        height={725}
         priority
         className="hidden h-auto w-full md:block"
         sizes="100vw"
@@ -15,8 +15,8 @@ export default function Hero() {
       <Image
         src="/landing/lsz-hero-mobile.png"
         alt="Sejam vindos à LSZ Store"
-        width={996}
-        height={567}
+        width={971}
+        height={1619}
         priority
         className="h-auto w-full md:hidden"
         sizes="100vw"
