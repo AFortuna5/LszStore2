@@ -97,7 +97,7 @@ Copie `.env.example` para `.env` e preencha as credenciais. Sem credenciais, o p
 - Para testes, use uma chave `sk_test_...` e `STRIPE_LIVE_MODE=false`. Para cobrar de verdade, use uma chave `sk_live_...`, `STRIPE_LIVE_MODE=true` e um `APP_URL` publico com HTTPS.
 - Guarde a chave secreta e a assinatura `whsec_...` apenas nas variaveis protegidas da hospedagem. Nunca envie esses valores ao navegador nem os versione no Git.
 - Antes de liberar a loja, conclua uma compra de teste e confirme que o pedido muda de `PENDING` para `PAID` depois que o webhook for recebido.
-- **Melhor Envio:** configure o CEP de origem e `MELHOR_ENVIO_TOKEN`. Use sandbox durante a homologação.
+- **Correios:** configure o CEP de origem, usuário Meu Correios, código de acesso à API, cartão de postagem, contrato e DR. Os serviços padrão são PAC e SEDEX e podem ser alterados em `CORREIOS_SERVICES`.
 - **Resend:** configure `RESEND_API_KEY`, valide o domínio e altere `EMAIL_FROM`.
 - **Cloudinary:** informe as três credenciais para liberar upload de imagens no editor de produtos.
 - **Contato público:** substitua telefone, WhatsApp, Instagram e e-mail pelos dados definitivos do cliente.
