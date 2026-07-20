@@ -135,25 +135,35 @@ export default function CheckoutPage() {
     if (zip.length !== 8 || !items.length) return;
     setShippingLoading(true);
     setStatus("");
-    if (form) {
-      const cepResponse = await fetch(`/api/address/cep/${zip}`);
-      if (cepResponse.ok) {
-        const address = await cepResponse.json();
-        for (const field of ["street", "neighborhood", "city", "state"] as const) {
-          const input = form.elements.namedItem(field) as HTMLInputElement | null;
-          if (input && address[field]) input.value = address[field];
+    setQuotes([]);
+    setSelectedShipping("");
+    try {
+      if (form) {
+        const cepResponse = await fetch(`/api/address/cep/${zip}`);
+        if (cepResponse.ok) {
+          const address = await cepResponse.json();
+          for (const field of ["street", "neighborhood", "city", "state"] as const) {
+            const input = form.elements.namedItem(field) as HTMLInputElement | null;
+            if (input && address[field]) input.value = address[field];
+          }
         }
       }
+      const response = await fetch("/api/shipping/quote", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ zipCode: zip, items }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        setStatus(payload.error ?? "Nao foi possivel calcular o frete");
+        return;
+      }
+      setQuotes(payload.quotes);
+      setSelectedShipping(payload.quotes[0]?.id ?? "");
+    } catch {
+      setStatus("Nao foi possivel calcular o frete. Verifique sua conexao e tente novamente.");
+    } finally {
+      setShippingLoading(false);
     }
-    const response = await fetch("/api/shipping/quote", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ zipCode: zip, items }),
-    });
-    const payload = await response.json();
-    setShippingLoading(false);
-    if (!response.ok) { setStatus(payload.error ?? "Nao foi possivel calcular o frete"); return; }
-    setQuotes(payload.quotes);
-    setSelectedShipping(payload.quotes[0]?.id ?? "");
   }
 
   return (

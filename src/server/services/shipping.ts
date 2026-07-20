@@ -18,6 +18,7 @@ export async function getShippingQuotes(items: ShippingCartItem[], destinationZi
   const subtotal = items.reduce((sum, item) => {
     const product = byId.get(item.productId)!;
     const variant = product.variants.find((entry) => entry.id === item.variantId);
+    if (item.variantId && !variant) throw new Error("Variacao de produto invalida");
     return sum + moneyToNumber(variant?.priceOverride ?? product.promoPrice ?? product.price) * item.quantity;
   }, 0);
 
@@ -39,23 +40,32 @@ export async function getShippingQuotes(items: ShippingCartItem[], destinationZi
       from: { postal_code: env.originZip }, to: { postal_code: zip },
       products: items.map((item) => {
         const product = byId.get(item.productId)!;
+        const variant = product.variants.find((entry) => entry.id === item.variantId);
         return {
           id: product.id, width: product.width, height: product.height, length: product.length,
-          weight: product.weight, insurance_value: moneyToNumber(product.promoPrice ?? product.price), quantity: item.quantity,
+          weight: product.weight,
+          insurance_value: moneyToNumber(variant?.priceOverride ?? product.promoPrice ?? product.price),
+          quantity: item.quantity,
         };
       }),
+      options: { receipt: false, own_hand: false },
     }),
     cache: "no-store",
   });
-  if (!response.ok) return [fallbackQuote()];
-  const result = await response.json() as Array<Record<string, unknown>>;
+  if (!response.ok) {
+    console.error("Melhor Envio indisponivel", response.status, await response.text());
+    throw new Error("Nao foi possivel consultar as transportadoras. Tente novamente.");
+  }
+  const result = await response.json() as unknown;
+  if (!Array.isArray(result)) throw new Error("Resposta invalida do servico de frete");
   const quotes = result.filter((quote) => !quote.error && quote.price).map((quote) => ({
     id: String(quote.id), name: String(quote.name ?? "Entrega"),
     company: String((quote.company as { name?: string } | undefined)?.name ?? "Transportadora"),
     price: Number(quote.custom_price ?? quote.price),
     deliveryDays: Number(quote.custom_delivery_time ?? quote.delivery_time ?? env.fallbackShippingDays),
   })).filter((quote) => Number.isFinite(quote.price));
-  return quotes.length ? quotes : [fallbackQuote()];
+  if (!quotes.length) throw new Error("Nenhuma opcao de frete disponivel para este CEP");
+  return quotes;
 }
 
 function fallbackQuote(): ShippingQuote {

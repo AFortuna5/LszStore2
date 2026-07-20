@@ -8,10 +8,19 @@ export async function POST(req: Request) {
     const items = body.items.map((item) => {
       if (!isRecord(item) || !isNonEmptyString(item.productId)) return null;
       const quantity = toPositiveInt(item.quantity);
-      return quantity ? { productId: item.productId.trim(), quantity } : null;
+      return quantity ? {
+        productId: item.productId.trim(),
+        variantId: isNonEmptyString(item.variantId) ? item.variantId.trim() : null,
+        quantity,
+      } : null;
     });
     if (items.some((item) => !item)) return jsonError("Itens invalidos");
-    return Response.json({ quotes: await getShippingQuotes(items as { productId: string; quantity: number }[], body.zipCode) });
+    return Response.json({
+      quotes: await getShippingQuotes(
+        items as { productId: string; variantId?: string | null; quantity: number }[],
+        body.zipCode,
+      ),
+    });
   } catch (error) {
     return jsonError(error instanceof Error ? error.message : "Erro ao calcular frete", 400);
   }
