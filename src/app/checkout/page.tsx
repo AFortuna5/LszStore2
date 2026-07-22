@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import SiteShell from "@/templates/layout/SiteShell";
 import { formatCurrency, getProductPrice, type StorefrontProduct } from "@/shared/storefront";
+import CouponBox, { type AppliedCoupon } from "@/templates/cart/CouponBox";
 
 type CartItem = {
   productId: string;
@@ -32,6 +33,7 @@ export default function CheckoutPage() {
   const [quotes, setQuotes] = useState<ShippingQuote[]>([]);
   const [selectedShipping, setSelectedShipping] = useState("");
   const [shippingLoading, setShippingLoading] = useState(false);
+  const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
   const checkoutKey = useRef<string | null>(null);
 
   useEffect(() => {
@@ -67,7 +69,9 @@ export default function CheckoutPage() {
   );
   const selectedQuote = quotes.find((quote) => quote.id === selectedShipping);
   const shipping = selectedQuote?.price ?? 0;
-  const total = subtotal + shipping;
+  const couponItems = useMemo(() => cartProducts.map((item) => ({ productId: item.productId, variantId: item.variantId, quantity: item.quantity })), [cartProducts]);
+  const discount = coupon?.discountAmount ?? 0;
+  const total = Math.max(0, subtotal - discount) + shipping;
 
   async function handleSubmit(formData: FormData) {
     if (!user) {
@@ -107,6 +111,7 @@ export default function CheckoutPage() {
         },
         paymentMethod: "STRIPE",
         shippingServiceId: selectedQuote.id,
+        couponCode: coupon?.code ?? null,
       }),
     });
 
@@ -245,10 +250,12 @@ export default function CheckoutPage() {
                 </div>
               </div>
               <div className="mt-6 space-y-3 text-sm text-silver">
+                {cartProducts.length > 0 && <CouponBox items={couponItems} onChange={setCoupon} />}
                 <div className="flex justify-between">
                   <span>Subtotal</span>
                   <span>{formatCurrency(subtotal)}</span>
                 </div>
+                {coupon && <div className="flex justify-between text-emerald-300"><span>Cupom {coupon.code}</span><span>-{formatCurrency(discount)}</span></div>}
                 <div className="flex justify-between">
                   <span>Frete</span>
                   <span>{shipping === 0 ? "Gratis" : formatCurrency(shipping)}</span>

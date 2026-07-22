@@ -78,6 +78,16 @@ export async function createPaymentSession(orderId: string) {
   const idempotencyKey = order.paymentSessionId
     ? `${order.id}:after:${order.paymentSessionId}`
     : `${order.id}:initial`;
+  const discountCents = moneyToCents(order.discountAmount);
+  const stripeCoupon = discountCents > 0
+    ? await stripe.coupons.create({
+        amount_off: discountCents,
+        currency: "brl",
+        duration: "once",
+        name: order.couponCode ? `Cupom ${order.couponCode}` : `Desconto do pedido ${order.id}`,
+        metadata: { orderId: order.id, couponCode: order.couponCode ?? "" },
+      }, { idempotencyKey: `${order.id}:discount:${discountCents}` })
+    : null;
   const checkout = await stripe.checkout.sessions.create({
     mode: "payment",
     locale: "pt-BR",
@@ -107,6 +117,7 @@ export async function createPaymentSession(orderId: string) {
         },
       }] : []),
     ],
+    discounts: stripeCoupon ? [{ coupon: stripeCoupon.id }] : undefined,
     metadata: { orderId: order.id, userId: order.userId },
     payment_intent_data: { metadata: { orderId: order.id, userId: order.userId } },
   }, { idempotencyKey });

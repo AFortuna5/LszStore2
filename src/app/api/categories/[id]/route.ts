@@ -82,6 +82,11 @@ export async function DELETE(_req: Request, context: RouteContext) {
 
     const { id } = await context.params;
 
+    const couponCount = await prisma.coupon.count({ where: { categoryId: id } });
+    if (couponCount > 0) {
+      return jsonError("Esta categoria possui cupons. Reatribua ou exclua os cupons primeiro.", 409);
+    }
+
     await prisma.category.delete({
       where: { id },
     });

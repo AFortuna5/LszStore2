@@ -6,6 +6,7 @@ import { Minus, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { formatCurrency, getProductPrice, type StorefrontProduct } from "@/shared/storefront";
+import CouponBox, { type AppliedCoupon } from "@/templates/cart/CouponBox";
 
 type CartItem = {
   productId: string;
@@ -16,6 +17,7 @@ type CartItem = {
 export default function CartClient() {
   const [items, setItems] = useState<CartItem[]>([]);
   const [catalog, setCatalog] = useState<StorefrontProduct[]>([]);
+  const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
 
   useEffect(() => {
     const stored = window.localStorage.getItem("lsz-cart");
@@ -42,7 +44,9 @@ export default function CartClient() {
     (sum, item) => sum + (item.variant?.price ?? getProductPrice(item.product)) * item.quantity,
     0
   );
-  const total = subtotal;
+  const couponItems = useMemo(() => cartProducts.map((item) => ({ productId: item.productId, variantId: item.variantId, quantity: item.quantity })), [cartProducts]);
+  const discount = coupon?.discountAmount ?? 0;
+  const total = Math.max(0, subtotal - discount);
 
   function persist(next: CartItem[]) {
     setItems(next);
@@ -154,11 +158,13 @@ export default function CartClient() {
         <h2 className="font-montserrat text-xl font-bold uppercase text-white">
           Resumo
         </h2>
+        <div className="mt-5"><CouponBox items={couponItems} onChange={setCoupon} /></div>
         <div className="mt-6 space-y-3 text-sm">
           <div className="flex justify-between text-silver">
             <span>Subtotal</span>
             <span>{formatCurrency(subtotal)}</span>
           </div>
+          {coupon && <div className="flex justify-between text-emerald-300"><span>Cupom {coupon.code}</span><span>-{formatCurrency(discount)}</span></div>}
           <div className="flex justify-between text-silver">
             <span>Frete</span>
             <span>Calculado no checkout</span>

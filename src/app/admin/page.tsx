@@ -16,11 +16,12 @@ export default async function AdminPage() {
     redirect("/login");
   }
 
-  const [users, products, orders, categories] = await Promise.all([
+  const [users, products, orders, categories, coupons] = await Promise.all([
     prisma.user.count(),
     prisma.product.count(),
     prisma.order.count(),
     prisma.category.count(),
+    prisma.coupon.count(),
   ]);
   const payment = getStripeReadiness();
 
@@ -34,12 +35,13 @@ export default async function AdminPage() {
           <h1 className="mb-8 font-montserrat text-4xl font-black uppercase text-white md:text-5xl">
             Painel admin
           </h1>
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-5">
             {[
               { label: "Usuarios", value: users },
               { label: "Produtos", value: products },
               { label: "Pedidos", value: orders },
               { label: "Categorias", value: categories },
+              { label: "Cupons", value: coupons },
             ].map((item) => (
               <div key={item.label} className="rounded-lg border border-border bg-dark-blue p-6">
                 <p className="text-sm uppercase tracking-wide text-silver">{item.label}</p>
@@ -59,12 +61,15 @@ export default async function AdminPage() {
             <p className="mt-3 break-all text-xs text-silver">Webhook: {env.appUrl}/api/payments/stripe/webhook</p>
           </div>
 
-          <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-6">
             <Link href="/admin/produtos" className="rounded border border-border bg-dark-blue p-5 text-white hover:border-neon-blue">
               Gerenciar produtos e categorias
             </Link>
             <Link href="/admin/pedidos" className="rounded border border-border bg-dark-blue p-5 text-white hover:border-neon-blue">
               Gerenciar pedidos e envios
+            </Link>
+            <Link href="/admin/cupons" className="rounded border border-border bg-dark-blue p-5 text-white hover:border-neon-blue">
+              Gerenciar cupons e descontos
             </Link>
             <Link href="/admin/inventario" className="rounded border border-border bg-dark-blue p-5 text-white hover:border-neon-blue">
               Inventario, entradas, saidas e logs

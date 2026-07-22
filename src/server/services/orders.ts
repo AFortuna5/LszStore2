@@ -4,6 +4,7 @@ import { Prisma } from "@prisma/client";
 
 import { prisma } from "@/server/database/client";
 import { moneySum, moneyToNumber } from "@/server/money";
+import { getCouponQuote } from "@/server/services/coupons";
 import { changeInventory } from "@/server/services/inventory";
 
 export type CartItemInput = {
@@ -33,6 +34,7 @@ type CheckoutOrderInput = {
   shippingServiceId?: string;
   shippingDeadline?: number;
   checkoutKey?: string;
+  couponCode?: string | null;
 };
 
 const orderInclude = {
@@ -102,6 +104,10 @@ export async function createOrderFromCart(
         ? product.variants.find((entry) => entry.id === item.variantId)
         : product.variants.find((entry) => entry.isDefault) ?? product.variants[0];
 
+      if (item.variantId && !variant) {
+        throw new Error(`Variacao invalida para ${product.name}`);
+      }
+
       const availableInventory = variant?.inventory ?? product.inventory;
 
       if (availableInventory < item.quantity) {
@@ -117,6 +123,8 @@ export async function createOrderFromCart(
         ? product.variants.find((entry) => entry.id === item.variantId)
         : product.variants.find((entry) => entry.isDefault) ?? product.variants[0];
 
+      if (item.variantId && !variant) throw new Error("Variacao do produto invalida");
+
       const price = moneyToNumber(variant?.priceOverride ?? product.promoPrice ?? product.price);
 
       return {
@@ -130,10 +138,13 @@ export async function createOrderFromCart(
       };
     });
 
-    const total = moneySum(orderItems.map((item) => item.price * item.quantity));
+    const subtotal = moneySum(orderItems.map((item) => item.price * item.quantity));
+    const couponQuote = checkout?.couponCode
+      ? await getCouponQuote(tx, checkout.couponCode, normalizedItems)
+      : null;
+    const discountAmount = couponQuote?.discountAmount ?? 0;
 
     const shippingCost = moneyToNumber(checkout?.shippingCost ?? 0);
-    const subtotal = total;
     const address = checkout?.address;
 
     const shippingAddress = address
@@ -150,8 +161,11 @@ export async function createOrderFromCart(
         userId,
         addressId: shippingAddress?.id,
         subtotal,
+        discountAmount,
         shippingCost,
-        total: moneySum([subtotal, shippingCost]),
+        total: moneySum([subtotal, shippingCost, -discountAmount]),
+        couponId: couponQuote?.coupon.id,
+        couponCode: couponQuote?.code,
         checkoutKey: checkout?.checkoutKey,
         paymentMethod: checkout?.paymentMethod ?? "PENDING",
         paymentProvider: checkout?.paymentMethod === "STRIPE" ? "STRIPE" : "MANUAL",
@@ -175,6 +189,13 @@ export async function createOrderFromCart(
       },
       include: orderInclude,
     });
+
+    if (couponQuote) {
+      await tx.coupon.update({
+        where: { id: couponQuote.coupon.id },
+        data: { usageCount: { increment: 1 } },
+      });
+    }
 
     for (const item of orderItems) {
       await changeInventory(
@@ -217,6 +238,7 @@ export function serializeOrder<T extends Record<string, unknown>>(order: T) {
   return {
     ...order,
     subtotal: moneyToNumber(order.subtotal as number | string | { toString(): string }),
+    discountAmount: moneyToNumber(order.discountAmount as number | string | { toString(): string }),
     shippingCost: moneyToNumber(order.shippingCost as number | string | { toString(): string }),
     total: moneyToNumber(order.total as number | string | { toString(): string }),
     items,

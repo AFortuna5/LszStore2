@@ -13,6 +13,7 @@ import { prisma } from "@/server/database/client";
 import { getShippingQuotes } from "@/server/services/shipping";
 import { createPaymentSession, getStripeReadiness } from "@/server/services/payment";
 import { escapeHtml, sendEmail } from "@/server/services/email";
+import { CouponValidationError } from "@/server/services/coupons";
 
 async function existingCheckoutResponse(checkoutKey: string, userId: string) {
   const order = await prisma.order.findUnique({
@@ -81,7 +82,7 @@ export async function POST(req: Request) {
       return jsonError("Nao autorizado", 401);
     }
 
-    const { userId, items, address, paymentMethod, shippingServiceId } = body;
+    const { userId, items, address, paymentMethod, shippingServiceId, couponCode } = body;
 
     if (!isNonEmptyString(userId) || userId.trim() !== session.id) {
       return jsonError("Usuario invalido", 401);
@@ -160,6 +161,7 @@ export async function POST(req: Request) {
         shippingServiceId: selectedQuote.id,
         shippingDeadline: selectedQuote.deliveryDays,
         checkoutKey,
+        couponCode: isNonEmptyString(couponCode) ? couponCode.trim() : null,
       });
     } catch (error) {
       // Duas requisicoes simultaneas podem passar pela primeira consulta. A
@@ -187,6 +189,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ order: serializeOrder(order), paymentUrl }, { status: 201 });
   } catch (error) {
+    if (error instanceof CouponValidationError) return jsonError(error.message);
     console.error(error);
     return jsonError("Erro ao criar o pedido", 500);
   }
