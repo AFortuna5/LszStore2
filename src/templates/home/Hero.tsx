@@ -95,17 +95,24 @@ export default function Hero() {
                       src="/landing/cupom-boas-vindas.png"
                       alt=""
                       fill
-                      className="scale-110 object-cover opacity-45 blur-2xl"
-                      sizes="100vw"
+                      className="scale-110 object-cover opacity-45 blur-2xl md:hidden"
+                      sizes="77vw"
                       aria-hidden="true"
                     />
-                    <div className="absolute inset-0 bg-[#01030c]/55" />
+                    <div className="absolute inset-0 bg-[#01030c]/55 md:hidden" />
                     <Image
                       src="/landing/cupom-boas-vindas.png"
                       alt={slide.alt}
                       fill
-                      className="object-contain"
-                      sizes="(min-width: 768px) 34vw, 77vw"
+                      className="object-contain md:hidden"
+                      sizes="77vw"
+                    />
+                    <Image
+                      src="/landing/cupom-boas-vindas-desktop.png"
+                      alt={slide.alt}
+                      fill
+                      className="hidden object-cover md:block"
+                      sizes="100vw"
                     />
                   </>
                 )}
