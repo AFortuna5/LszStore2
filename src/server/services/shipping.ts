@@ -3,7 +3,10 @@ import "server-only";
 import { env } from "@/server/config/env";
 import { prisma } from "@/server/database/client";
 import { moneyToNumber } from "@/server/money";
-import { getCorreiosQuotes, isCorreiosConfigured } from "@/server/services/correios";
+import {
+  getMelhorEnvioQuotes,
+  isMelhorEnvioConfigured,
+} from "@/server/services/melhor-envio";
 
 export type ShippingCartItem = { productId: string; variantId?: string | null; quantity: number };
 export type ShippingQuote = { id: string; name: string; company: string; price: number; deliveryDays: number };
@@ -27,38 +30,27 @@ export async function getShippingQuotes(items: ShippingCartItem[], destinationZi
     return [{ id: "FREE", name: "Frete gratis", company: env.storeName, price: 0, deliveryDays: env.fallbackShippingDays }];
   }
 
-  if (!isCorreiosConfigured()) return [fallbackQuote()];
+  if (!isMelhorEnvioConfigured()) return [fallbackQuote()];
 
-  const dimensions = items.map((item) => {
+  const quotes = await getMelhorEnvioQuotes(zip, items.map((item) => {
     const product = byId.get(item.productId)!;
+    const variant = product.variants.find((entry) => entry.id === item.variantId);
     return {
+      id: item.variantId ? `${product.id}:${item.variantId}` : product.id,
       quantity: item.quantity,
       weight: product.weight,
       width: product.width,
       height: product.height,
       length: product.length,
+      insuranceValue: moneyToNumber(
+        variant?.priceOverride ?? product.promoPrice ?? product.price,
+      ),
     };
-  });
-  const width = Math.max(...dimensions.map((item) => item.width));
-  const length = Math.max(...dimensions.map((item) => item.length));
-  const totalVolume = dimensions.reduce(
-    (sum, item) => sum + item.width * item.height * item.length * item.quantity,
-    0,
-  );
-  const quotes = await getCorreiosQuotes(zip, {
-    weightGrams: dimensions.reduce((sum, item) => sum + item.weight * item.quantity * 1000, 0),
-    widthCm: width,
-    lengthCm: length,
-    heightCm: Math.max(
-      ...dimensions.map((item) => item.height),
-      totalVolume / (width * length),
-    ),
-    declaredValue: subtotal,
-  });
+  }));
   if (!quotes.length) throw new Error("Nenhuma opcao de frete disponivel para este CEP");
   return quotes;
 }
 
 function fallbackQuote(): ShippingQuote {
-  return { id: "STANDARD", name: "Entrega padrao", company: "Correios", price: env.fallbackShippingPrice, deliveryDays: env.fallbackShippingDays };
+  return { id: "STANDARD", name: "Entrega padrao", company: env.storeName, price: env.fallbackShippingPrice, deliveryDays: env.fallbackShippingDays };
 }

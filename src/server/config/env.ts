@@ -2,17 +2,6 @@ import "server-only";
 
 import { storeContact } from "@/shared/store-contact";
 
-function parseCorreiosServices(value: string | undefined) {
-  const services = (value ?? "03298:PAC,03220:SEDEX")
-    .split(",")
-    .map((entry) => {
-      const [code, ...nameParts] = entry.split(":");
-      return { code: code?.trim(), name: nameParts.join(":").trim() };
-    })
-    .filter((service) => /^\d+$/.test(service.code) && service.name);
-  return services.length ? services : [{ code: "03298", name: "PAC" }, { code: "03220", name: "SEDEX" }];
-}
-
 export const env = {
   appUrl: process.env.APP_URL ?? "http://localhost:3000",
   storeName: process.env.STORE_NAME ?? "LSZ Store",
@@ -21,13 +10,8 @@ export const env = {
   freeShippingFrom: Number(process.env.FREE_SHIPPING_FROM ?? 399),
   fallbackShippingPrice: Number(process.env.FALLBACK_SHIPPING_PRICE ?? 24.9),
   fallbackShippingDays: Number(process.env.FALLBACK_SHIPPING_DAYS ?? 7),
-  correiosId: process.env.CORREIOS_ID,
-  correiosApiCode: process.env.CORREIOS_API_CODE,
-  correiosPostingCard: process.env.CORREIOS_POSTING_CARD,
-  correiosContract: process.env.CORREIOS_CONTRACT,
-  correiosDr: process.env.CORREIOS_DR,
-  correiosServices: parseCorreiosServices(process.env.CORREIOS_SERVICES),
-  correiosSandbox: process.env.CORREIOS_SANDBOX === "true",
+  melhorEnvioToken: process.env.MELHOR_ENVIO_TOKEN,
+  melhorEnvioSandbox: process.env.MELHOR_ENVIO_SANDBOX === "true",
   stripeSecretKey: process.env.STRIPE_SECRET_KEY,
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
   stripeLiveMode: process.env.STRIPE_LIVE_MODE === "true",
