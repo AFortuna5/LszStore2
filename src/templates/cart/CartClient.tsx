@@ -47,6 +47,10 @@ export default function CartClient() {
   const couponItems = useMemo(() => cartProducts.map((item) => ({ productId: item.productId, variantId: item.variantId, quantity: item.quantity })), [cartProducts]);
   const discount = coupon?.discountAmount ?? 0;
   const total = Math.max(0, subtotal - discount);
+  const hasStockIssues = cartProducts.some((item) => {
+    const available = item.variant?.inventory ?? item.product.inventory;
+    return available < item.quantity;
+  });
 
   function persist(next: CartItem[]) {
     setItems(next);
@@ -89,7 +93,10 @@ export default function CartClient() {
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
       <div className="space-y-4">
-        {cartProducts.map(({ product, variant, variantId, quantity }) => (
+        {cartProducts.map(({ product, variant, variantId, quantity }) => {
+          const available = variant?.inventory ?? product.inventory;
+          const hasStockIssue = available < quantity;
+          return (
           <div
             key={`${product.id}:${variantId ?? "default"}`}
             className="grid gap-4 rounded-lg border border-border bg-dark-blue p-4 sm:grid-cols-[120px_1fr_auto]"
@@ -121,6 +128,13 @@ export default function CartClient() {
               <p className="mt-3 font-montserrat text-xl font-bold text-white">
                 {formatCurrency(variant?.price ?? getProductPrice(product))}
               </p>
+              <p className={`mt-2 text-sm font-semibold ${hasStockIssue ? "text-red-400" : "text-emerald-400"}`}>
+                {available === 0
+                  ? "Produto esgotado — remova para continuar"
+                  : hasStockIssue
+                    ? `Somente ${available} unidade(s) disponivel(is)`
+                    : `${available} unidade(s) disponivel(is)`}
+              </p>
             </div>
             <div className="flex items-center gap-3 sm:flex-col sm:items-end sm:justify-between">
               <div className="flex h-10 items-center rounded border border-border bg-black">
@@ -135,7 +149,8 @@ export default function CartClient() {
                 <span className="w-10 text-center font-bold">{quantity}</span>
                 <button
                   type="button"
-                onClick={() => updateQuantity(product.id, variantId, quantity + 1)}
+                  disabled={quantity >= available}
+                  onClick={() => updateQuantity(product.id, variantId, quantity + 1)}
                   className="grid h-10 w-10 place-items-center text-silver hover:text-white"
                   aria-label="Aumentar quantidade"
                 >
@@ -152,7 +167,8 @@ export default function CartClient() {
               </button>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
       <aside className="h-fit rounded-lg border border-border bg-dark-blue p-6">
         <h2 className="font-montserrat text-xl font-bold uppercase text-white">
@@ -176,12 +192,18 @@ export default function CartClient() {
             </div>
           </div>
         </div>
-        <Link
-          href="/checkout"
-          className="mt-6 flex w-full justify-center rounded bg-neon-blue px-6 py-4 font-bold uppercase text-black hover:bg-white"
-        >
-          Finalizar compra
-        </Link>
+        {hasStockIssues ? (
+          <p className="mt-6 rounded border border-red-500 bg-red-950/40 p-4 text-sm text-red-200">
+            Remova os produtos esgotados ou reduza as quantidades para finalizar a compra.
+          </p>
+        ) : (
+          <Link
+            href="/checkout"
+            className="mt-6 flex w-full justify-center rounded bg-neon-blue px-6 py-4 font-bold uppercase text-black hover:bg-white"
+          >
+            Finalizar compra
+          </Link>
+        )}
       </aside>
     </div>
   );

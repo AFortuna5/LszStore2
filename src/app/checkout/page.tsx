@@ -62,6 +62,14 @@ export default function CheckoutPage() {
         .filter(Boolean) as Array<CartItem & { product: StorefrontProduct; variant?: StorefrontProduct["variants"][number] }>,
     [catalog, items]
   );
+  const stockIssues = useMemo(
+    () =>
+      cartProducts.filter((item) => {
+        const available = item.variant?.inventory ?? item.product.inventory;
+        return available < item.quantity;
+      }),
+    [cartProducts],
+  );
 
   const subtotal = cartProducts.reduce(
     (sum, item) => sum + (item.variant?.price ?? getProductPrice(item.product)) * item.quantity,
@@ -74,6 +82,10 @@ export default function CheckoutPage() {
   const total = Math.max(0, subtotal - discount) + shipping;
 
   async function handleSubmit(formData: FormData) {
+    if (stockIssues.length > 0) {
+      setStatus("Ha produtos esgotados ou sem quantidade suficiente. Atualize o carrinho para continuar.");
+      return;
+    }
     if (!user) {
       setStatus("Entre na sua conta antes de finalizar a compra.");
       return;
@@ -219,9 +231,26 @@ export default function CheckoutPage() {
                 </div>
               </div>
               <div className="rounded border border-border bg-black p-4 text-sm text-silver"><strong className="text-white">Pagamento seguro pela Stripe</strong><p className="mt-1">O pagamento com cartao sera concluido no ambiente protegido da Stripe.</p></div>
+              {stockIssues.length > 0 && (
+                <div className="rounded border border-red-500 bg-red-950/40 p-4 text-sm text-red-200">
+                  <strong>Revise o estoque antes de pagar:</strong>
+                  <ul className="mt-2 list-disc pl-5">
+                    {stockIssues.map((item) => (
+                      <li key={`${item.productId}:${item.variantId ?? "default"}`}>
+                        {item.product.name} — {(item.variant?.inventory ?? item.product.inventory) === 0
+                          ? "esgotado"
+                          : `somente ${item.variant?.inventory ?? item.product.inventory} unidade(s)`}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link href="/carrinho" className="mt-3 inline-flex font-bold uppercase text-neon-blue hover:text-white">
+                    Atualizar carrinho
+                  </Link>
+                </div>
+              )}
               <button
                 type="submit"
-                disabled={loading || cartProducts.length === 0}
+                disabled={loading || cartProducts.length === 0 || stockIssues.length > 0}
                 className="w-full rounded bg-neon-blue px-6 py-4 font-bold uppercase text-black transition-colors hover:bg-white disabled:opacity-50"
               >
                 {loading ? "Abrindo pagamento..." : "Finalizar compra e pagar"}

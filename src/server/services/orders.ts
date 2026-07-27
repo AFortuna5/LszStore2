@@ -13,6 +13,17 @@ export type CartItemInput = {
   quantity: number;
 };
 
+export class OrderInventoryError extends Error {
+  constructor(
+    public readonly productName: string,
+    public readonly available: number,
+    public readonly requested: number,
+  ) {
+    super(`Estoque insuficiente para ${productName}`);
+    this.name = "OrderInventoryError";
+  }
+}
+
 type CheckoutAddressInput = {
   fullName: string;
   phone: string;
@@ -111,7 +122,11 @@ export async function createOrderFromCart(
       const availableInventory = variant?.inventory ?? product.inventory;
 
       if (availableInventory < item.quantity) {
-        throw new Error(`Estoque insuficiente para ${product.name}`);
+        throw new OrderInventoryError(
+          product.name,
+          availableInventory,
+          item.quantity,
+        );
       }
     }
 

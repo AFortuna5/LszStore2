@@ -8,7 +8,12 @@ import {
   toPositiveInt,
 } from "@/server/http/api";
 import { readSessionFromRequest } from "@/server/auth/session";
-import { createOrderFromCart, orderInclude, serializeOrder } from "@/server/services/orders";
+import {
+  createOrderFromCart,
+  OrderInventoryError,
+  orderInclude,
+  serializeOrder,
+} from "@/server/services/orders";
 import { prisma } from "@/server/database/client";
 import { getShippingQuotes } from "@/server/services/shipping";
 import { createPaymentSession, getStripeReadiness } from "@/server/services/payment";
@@ -194,6 +199,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ order: serializeOrder(order), paymentUrl }, { status: 201 });
   } catch (error) {
     if (error instanceof CouponValidationError) return jsonError(error.message);
+    if (error instanceof OrderInventoryError) {
+      const availability = error.available === 0
+        ? "O produto esta esgotado."
+        : `Restam apenas ${error.available} unidade(s).`;
+      return jsonError(
+        `${error.productName}: ${availability} Atualize o carrinho para continuar.`,
+        409,
+      );
+    }
     console.error(error);
     return jsonError("Erro ao criar o pedido", 500);
   }
