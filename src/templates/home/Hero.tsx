@@ -60,7 +60,7 @@ export default function Hero() {
       aria-roledescription="carrossel"
     >
       <div className="overflow-hidden" ref={emblaRef}>
-        <div className="flex touch-pan-y">
+        <div className="flex touch-pan-y gap-0">
           {slides.map((slide) => (
             <div
               key={slide.id}
@@ -95,11 +95,10 @@ export default function Hero() {
                       src="/landing/cupom-boas-vindas.png"
                       alt=""
                       fill
-                      className="scale-110 object-cover opacity-45 blur-2xl md:hidden"
-                      sizes="77vw"
+                      className="scale-[1.02] object-cover md:hidden"
+                      sizes="100vw"
                       aria-hidden="true"
                     />
-                    <div className="absolute inset-0 bg-[#01030c]/55 md:hidden" />
                     <Image
                       src="/landing/cupom-boas-vindas.png"
                       alt={slide.alt}
