@@ -179,6 +179,10 @@ export async function POST(req: Request) {
     } catch (paymentError) {
       console.error(paymentError);
       await prisma.order.update({ where: { id: order.id }, data: { paymentStatus: "ERROR" } });
+      return jsonError(
+        "Pedido criado, mas nao foi possivel abrir o pagamento. Tente novamente.",
+        502,
+      );
     }
     void sendEmail({
       to: order.customerEmail,

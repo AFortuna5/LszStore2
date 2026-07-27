@@ -77,7 +77,7 @@ export async function createPaymentSession(orderId: string) {
 
   const idempotencyKey = order.paymentSessionId
     ? `${order.id}:after:${order.paymentSessionId}`
-    : `${order.id}:initial`;
+    : `${order.id}:checkout:v2`;
   const discountCents = moneyToCents(order.discountAmount);
   const stripeCoupon = discountCents > 0
     ? await stripe.coupons.create({
@@ -91,6 +91,7 @@ export async function createPaymentSession(orderId: string) {
   const checkout = await stripe.checkout.sessions.create({
     mode: "payment",
     locale: "pt-BR",
+    payment_method_types: ["card"],
     client_reference_id: order.id,
     customer_email: order.customerEmail,
     success_url: `${env.appUrl}/checkout/retorno?session_id={CHECKOUT_SESSION_ID}`,

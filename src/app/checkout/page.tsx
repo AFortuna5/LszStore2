@@ -218,13 +218,13 @@ export default function CheckoutPage() {
                   ))}
                 </div>
               </div>
-              <div className="rounded border border-border bg-black p-4 text-sm text-silver"><strong className="text-white">Pagamento seguro pela Stripe</strong><p className="mt-1">Pix, cartao e boleto sao escolhidos no ambiente protegido do provedor.</p></div>
+              <div className="rounded border border-border bg-black p-4 text-sm text-silver"><strong className="text-white">Pagamento seguro pela Stripe</strong><p className="mt-1">O pagamento com cartao sera concluido no ambiente protegido da Stripe.</p></div>
               <button
                 type="submit"
                 disabled={loading || cartProducts.length === 0}
                 className="w-full rounded bg-neon-blue px-6 py-4 font-bold uppercase text-black transition-colors hover:bg-white disabled:opacity-50"
               >
-                Confirmar pedido
+                {loading ? "Abrindo pagamento..." : "Finalizar compra e pagar"}
               </button>
               {status && <p className="text-sm text-neon-blue">{status}</p>}
             </form>
