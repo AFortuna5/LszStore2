@@ -86,8 +86,8 @@ export async function PATCH(req: Request, context: RouteContext) {
     }
 
     if ("password" in body) {
-      if (!isNonEmptyString(body.password) || body.password.length < 6) {
-        return jsonError("Senha deve ter pelo menos 6 caracteres");
+      if (!isNonEmptyString(body.password) || body.password.length < 8) {
+        return jsonError("Senha deve ter pelo menos 8 caracteres");
       }
       data.password = hashPassword(body.password);
     }

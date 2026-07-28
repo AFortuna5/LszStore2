@@ -139,12 +139,14 @@ export default function LoginPage() {
                 Login
               </h2>
               <input
+                required
                 name="login-email"
                 className="mb-3 w-full rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue"
                 type="email"
                 placeholder="voce@email.com"
               />
               <input
+                required
                 name="login-password"
                 className="mb-4 w-full rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue"
                 type="password"
@@ -167,21 +169,25 @@ export default function LoginPage() {
                 Criar conta
               </h2>
               <input
+                required
                 name="register-name"
                 className="mb-3 w-full rounded border border-border bg-dark-blue px-4 py-3 outline-none focus:border-neon-blue"
                 placeholder="Nome completo"
               />
               <input
+                required
                 name="register-email"
                 className="mb-3 w-full rounded border border-border bg-dark-blue px-4 py-3 outline-none focus:border-neon-blue"
                 type="email"
                 placeholder="E-mail"
               />
               <input
+                required
+                minLength={8}
                 name="register-password"
                 className="mb-5 w-full rounded border border-border bg-dark-blue px-4 py-3 outline-none focus:border-neon-blue"
                 type="password"
-                placeholder="Senha"
+                placeholder="Senha (8+ caracteres)"
               />
               <button
                 type="submit"

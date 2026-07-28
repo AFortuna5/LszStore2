@@ -10,8 +10,8 @@ export async function PATCH(req: Request) {
     const body = await readJson(req);
     if (!isRecord(body)) return jsonError("JSON invalido");
     if (!isNonEmptyString(body.currentPassword)) return jsonError("Informe a senha atual");
-    if (!isNonEmptyString(body.newPassword) || body.newPassword.length < 6) {
-      return jsonError("A nova senha deve ter pelo menos 6 caracteres");
+    if (!isNonEmptyString(body.newPassword) || body.newPassword.length < 8) {
+      return jsonError("A nova senha deve ter pelo menos 8 caracteres");
     }
     if (body.currentPassword === body.newPassword) {
       return jsonError("Escolha uma senha diferente da atual");

@@ -184,8 +184,8 @@ export default function AccountPage() {
                   <div className="space-y-4">
                     <input required type="password" name="currentPassword" placeholder="Senha atual" className={inputClass} />
                     <div className="grid gap-4 sm:grid-cols-2">
-                      <input required minLength={6} type="password" name="newPassword" placeholder="Nova senha" className={inputClass} />
-                      <input required minLength={6} type="password" name="confirmPassword" placeholder="Confirmar nova senha" className={inputClass} />
+                      <input required minLength={8} type="password" name="newPassword" placeholder="Nova senha (8+ caracteres)" className={inputClass} />
+                      <input required minLength={8} type="password" name="confirmPassword" placeholder="Confirmar nova senha" className={inputClass} />
                     </div>
                     <button className="rounded border border-neon-blue px-5 py-3 font-bold uppercase text-neon-blue hover:bg-neon-blue hover:text-black">Alterar senha</button>
                   </div>

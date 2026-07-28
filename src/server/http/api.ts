@@ -50,11 +50,23 @@ export function toBooleanParam(value: string | null) {
 
 export function normalizeImages(value: unknown) {
   if (Array.isArray(value)) {
-    const images = value.filter(isNonEmptyString).map((image) => image.trim());
+    const images = value
+      .filter(isNonEmptyString)
+      .map((image) => image.trim())
+      .filter(isValidImageSource);
     return images.length > 0 ? images.join(",") : null;
   }
 
-  return isNonEmptyString(value) ? value.trim() : null;
+  if (!isNonEmptyString(value)) return null;
+  const images = value
+    .split(/[,|]/g)
+    .map((image) => image.trim())
+    .filter(isValidImageSource);
+  return images.length > 0 ? images.join(",") : null;
+}
+
+function isValidImageSource(value: string) {
+  return value.startsWith("/") || /^https:\/\//i.test(value);
 }
 
 export function slugify(value: string) {

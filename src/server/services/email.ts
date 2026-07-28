@@ -2,10 +2,21 @@ import "server-only";
 
 import { env } from "@/server/config/env";
 
+export function getEmailReadiness() {
+  const missing: string[] = [];
+  if (!env.resendKey) missing.push("RESEND_API_KEY");
+  if (!process.env.EMAIL_FROM || env.emailFrom.includes("onboarding@resend.dev")) {
+    missing.push("EMAIL_FROM");
+  }
+  return { ready: missing.length === 0, missing };
+}
+
 export async function sendEmail({
   to, subject, html, idempotencyKey,
 }: { to: string; subject: string; html: string; idempotencyKey?: string }) {
-  if (!env.resendKey) return { sent: false, reason: "RESEND_API_KEY nao configurada" };
+  if (!getEmailReadiness().ready) {
+    return { sent: false, reason: "Envio de email nao configurado" };
+  }
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {

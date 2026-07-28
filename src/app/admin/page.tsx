@@ -6,6 +6,8 @@ import { readSessionFromCookies } from "@/server/auth/session";
 import { env } from "@/server/config/env";
 import { prisma } from "@/server/database/client";
 import { getStripeReadiness } from "@/server/services/payment";
+import { getEmailReadiness } from "@/server/services/email";
+import { isMelhorEnvioConfigured } from "@/server/services/melhor-envio";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +26,8 @@ export default async function AdminPage() {
     prisma.coupon.count(),
   ]);
   const payment = getStripeReadiness();
+  const email = getEmailReadiness();
+  const shippingReady = isMelhorEnvioConfigured();
 
   return (
     <SiteShell>
@@ -50,15 +54,35 @@ export default async function AdminPage() {
             ))}
           </div>
 
-          <div className={`mt-8 rounded-lg border p-6 ${payment.ready ? "border-emerald-500/50 bg-emerald-500/10" : "border-amber-500/50 bg-amber-500/10"}`}>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-bold uppercase tracking-wide text-white">Stripe</p>
-                <p className="mt-2 text-sm text-silver">{payment.ready ? `Configurado em modo ${env.stripeLiveMode ? "producao" : "teste"}.` : "Configuracao pendente. O checkout permanece bloqueado para evitar pedidos sem cobranca."}</p>
+          <div className="mt-8 grid gap-4 lg:grid-cols-3">
+            <div className={`rounded-lg border p-6 ${payment.ready ? "border-emerald-500/50 bg-emerald-500/10" : "border-amber-500/50 bg-amber-500/10"}`}>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-bold uppercase tracking-wide text-white">Stripe</p>
+                  <p className="mt-2 text-sm text-silver">{payment.ready ? `Configurado em modo ${env.stripeLiveMode ? "producao" : "teste"}.` : "Configuração pendente. O checkout permanece bloqueado."}</p>
+                </div>
+                <span className={`rounded px-3 py-2 text-xs font-bold uppercase ${payment.ready ? "bg-emerald-400 text-black" : "bg-amber-400 text-black"}`}>{payment.ready ? "Pronto" : "Pendente"}</span>
               </div>
-              <span className={`rounded px-3 py-2 text-xs font-bold uppercase ${payment.ready ? "bg-emerald-400 text-black" : "bg-amber-400 text-black"}`}>{payment.ready ? "Pronto" : "Pendente"}</span>
+              <p className="mt-3 break-all text-xs text-silver">Webhook: {env.appUrl}/api/payments/stripe/webhook</p>
             </div>
-            <p className="mt-3 break-all text-xs text-silver">Webhook: {env.appUrl}/api/payments/stripe/webhook</p>
+            <div className={`rounded-lg border p-6 ${shippingReady ? "border-emerald-500/50 bg-emerald-500/10" : "border-amber-500/50 bg-amber-500/10"}`}>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-bold uppercase tracking-wide text-white">Melhor Envio</p>
+                  <p className="mt-2 text-sm text-silver">{shippingReady ? `Configurado em modo ${env.melhorEnvioSandbox ? "sandbox" : "produção"}.` : "Token ou CEP de origem pendente."}</p>
+                </div>
+                <span className={`rounded px-3 py-2 text-xs font-bold uppercase ${shippingReady ? "bg-emerald-400 text-black" : "bg-amber-400 text-black"}`}>{shippingReady ? "Pronto" : "Pendente"}</span>
+              </div>
+            </div>
+            <div className={`rounded-lg border p-6 ${email.ready ? "border-emerald-500/50 bg-emerald-500/10" : "border-amber-500/50 bg-amber-500/10"}`}>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-bold uppercase tracking-wide text-white">E-mails</p>
+                  <p className="mt-2 text-sm text-silver">{email.ready ? "Resend e remetente configurados." : `Pendente: ${email.missing.join(", ")}.`}</p>
+                </div>
+                <span className={`rounded px-3 py-2 text-xs font-bold uppercase ${email.ready ? "bg-emerald-400 text-black" : "bg-amber-400 text-black"}`}>{email.ready ? "Pronto" : "Pendente"}</span>
+              </div>
+            </div>
           </div>
 
           <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-6">

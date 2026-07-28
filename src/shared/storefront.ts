@@ -70,7 +70,7 @@ export function parseImageList(value: string) {
   return value
     .split(/[,|]/g)
     .map((image) => image.trim())
-    .filter(Boolean);
+    .filter((image) => image.startsWith("/") || /^https:\/\//i.test(image));
 }
 
 export function parseTextList(value: string) {
@@ -83,7 +83,10 @@ export function parseTextList(value: string) {
 export function toStorefrontProduct(product: ProductPayload): StorefrontProduct {
   const images = parseImageList(product.images);
   const price = Number(product.price);
-  const promoPrice = product.promoPrice === null ? null : Number(product.promoPrice);
+  const rawPromoPrice = product.promoPrice === null ? null : Number(product.promoPrice);
+  const promoPrice = rawPromoPrice !== null && rawPromoPrice > 0 && rawPromoPrice < price
+    ? rawPromoPrice
+    : null;
   const discount =
     promoPrice && promoPrice < price
       ? `${Math.round(100 - (promoPrice / price) * 100)}% OFF`
@@ -101,8 +104,8 @@ export function toStorefrontProduct(product: ProductPayload): StorefrontProduct 
     price,
     promoPrice,
     discount,
-    image: images[0] ?? "/placeholder-product.png",
-    gallery: images.length > 0 ? images : ["/placeholder-product.png"],
+    image: images[0] ?? "/placeholder-product.svg",
+    gallery: images.length > 0 ? images : ["/placeholder-product.svg"],
     description: product.description,
     details: parseTextList(product.details),
     isNew: product.isNew,
@@ -113,18 +116,22 @@ export function toStorefrontProduct(product: ProductPayload): StorefrontProduct 
     width: product.width,
     height: product.height,
     length: product.length,
-    variants: product.variants.map((variant) => ({
-      id: variant.id,
-      sku: variant.sku,
-      label: variant.label,
-      size: variant.size,
-      color: variant.color,
-      inventory: variant.inventory,
-      image: variant.image,
-      price: variant.priceOverride === null ? promoPrice ?? price : Number(variant.priceOverride),
-      priceOverride: variant.priceOverride === null ? null : Number(variant.priceOverride),
-      isDefault: variant.isDefault,
-    })),
+    variants: product.variants.map((variant) => {
+      const rawOverride = variant.priceOverride === null ? null : Number(variant.priceOverride);
+      const priceOverride = rawOverride !== null && rawOverride > 0 ? rawOverride : null;
+      return {
+        id: variant.id,
+        sku: variant.sku,
+        label: variant.label,
+        size: variant.size,
+        color: variant.color,
+        inventory: variant.inventory,
+        image: variant.image,
+        price: priceOverride ?? promoPrice ?? price,
+        priceOverride,
+        isDefault: variant.isDefault,
+      };
+    }),
   };
 }
 

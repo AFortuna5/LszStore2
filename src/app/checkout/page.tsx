@@ -275,7 +275,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex gap-3 text-silver">
                   <CreditCard className="text-neon-blue" size={20} />
-                  Pix, cartao ou boleto
+                  Pagamento seguro com cartao
                 </div>
               </div>
               <div className="mt-6 space-y-3 text-sm text-silver">

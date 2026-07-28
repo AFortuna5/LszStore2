@@ -46,8 +46,8 @@ export async function POST(req: Request) {
 
     if (!isNonEmptyString(name)) return jsonError("Nome e obrigatorio");
     if (!isNonEmptyString(email)) return jsonError("Email e obrigatorio");
-    if (!isNonEmptyString(password) || password.length < 6) {
-      return jsonError("Senha deve ter pelo menos 6 caracteres");
+    if (!isNonEmptyString(password) || password.length < 8) {
+      return jsonError("Senha deve ter pelo menos 8 caracteres");
     }
 
     const user = await registerUser({

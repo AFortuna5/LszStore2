@@ -119,8 +119,11 @@ export async function POST(req: Request) {
       return jsonError("Descricao invalida");
     }
     const normalizedSlug = isNonEmptyString(slug) ? slug.trim() : undefined;
-    if (normalizedPrice === null) return jsonError("Preco invalido");
-    if (normalizedPromoPrice === null && promoPrice !== undefined && promoPrice !== null) {
+    if (normalizedPrice === null || normalizedPrice <= 0) return jsonError("Preco invalido");
+    if (
+      (normalizedPromoPrice === null && promoPrice !== undefined && promoPrice !== null)
+      || (normalizedPromoPrice !== null && (normalizedPromoPrice <= 0 || normalizedPromoPrice >= normalizedPrice))
+    ) {
       return jsonError("Preco promocional invalido");
     }
     if (!isNonEmptyString(categoryId)) {

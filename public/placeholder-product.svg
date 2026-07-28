@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" role="img" aria-labelledby="title">
+  <title id="title">Imagem do produto indisponível</title>
+  <rect width="800" height="800" fill="#071225"/>
+  <rect x="32" y="32" width="736" height="736" rx="32" fill="none" stroke="#079df2" stroke-width="4"/>
+  <text x="400" y="370" fill="#ffffff" font-family="Arial, sans-serif" font-size="72" font-weight="700" text-anchor="middle">LSZ STORE</text>
+  <text x="400" y="440" fill="#8aa0ba" font-family="Arial, sans-serif" font-size="30" text-anchor="middle">IMAGEM EM ATUALIZAÇÃO</text>
+</svg>

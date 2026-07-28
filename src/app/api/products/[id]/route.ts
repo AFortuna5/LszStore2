@@ -97,7 +97,7 @@ export async function PATCH(req: Request, context: RouteContext) {
 
     if ("price" in body) {
       const price = toNonNegativeNumber(body.price);
-      if (price === null) return jsonError("Preco invalido");
+      if (price === null || price <= 0) return jsonError("Preco invalido");
       data.price = price;
     }
 
@@ -106,7 +106,7 @@ export async function PATCH(req: Request, context: RouteContext) {
         data.promoPrice = null;
       } else {
         const promoPrice = toNonNegativeNumber(body.promoPrice);
-        if (promoPrice === null) return jsonError("Preco promocional invalido");
+        if (promoPrice === null || promoPrice <= 0) return jsonError("Preco promocional invalido");
         data.promoPrice = promoPrice;
       }
     }
@@ -172,6 +172,13 @@ export async function PATCH(req: Request, context: RouteContext) {
       include: { variants: true },
     });
     if (!existing) return jsonError("Produto nao encontrado", 404);
+    const effectivePrice = data.price ?? Number(existing.price);
+    const effectivePromoPrice = data.promoPrice === undefined
+      ? existing.promoPrice === null ? null : Number(existing.promoPrice)
+      : data.promoPrice;
+    if (effectivePromoPrice !== null && effectivePromoPrice >= effectivePrice) {
+      return jsonError("Preco promocional deve ser menor que o preco normal");
+    }
 
     if ("variants" in body && !Array.isArray(body.variants)) {
       return jsonError("Variacoes invalidas");
@@ -186,7 +193,11 @@ export async function PATCH(req: Request, context: RouteContext) {
           if (!isNonEmptyString(variant.sku) || !isNonEmptyString(variant.label)) {
             throw new Error(`VARIANT_INVALID:${index}`);
           }
-          if (inventory === undefined || priceOverride === null && variant.priceOverride !== null && variant.priceOverride !== "" && variant.priceOverride !== undefined) {
+          if (
+            inventory === undefined
+            || priceOverride !== null && priceOverride <= 0
+            || priceOverride === null && variant.priceOverride !== null && variant.priceOverride !== "" && variant.priceOverride !== undefined
+          ) {
             throw new Error(`VARIANT_INVALID:${index}`);
           }
           return {
