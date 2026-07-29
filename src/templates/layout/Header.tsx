@@ -141,9 +141,9 @@ export default function Header() {
                 {item.label}
               </Link>
             ))}
-            {sessionUser?.role === "ADMIN" && (
+            {["ADMIN", "MERCHANT"].includes(sessionUser?.role ?? "") && (
               <Link
-                href="/admin"
+                href={sessionUser?.role === "ADMIN" ? "/admin" : "/admin/financeiro"}
                 className="flex items-center gap-2 rounded border border-neon-blue/60 px-3 py-2 font-poppins text-sm font-bold text-neon-blue transition-colors hover:bg-neon-blue hover:text-black"
               >
                 <ShieldCheck size={17} />
@@ -195,9 +195,9 @@ export default function Header() {
                 <User size={20} />
                 <span className="font-poppins">Minha Conta</span>
               </Link>
-              {sessionUser?.role === "ADMIN" && (
+              {["ADMIN", "MERCHANT"].includes(sessionUser?.role ?? "") && (
                 <Link
-                  href="/admin"
+                  href={sessionUser?.role === "ADMIN" ? "/admin" : "/admin/financeiro"}
                   onClick={() => setMobileMenuOpen(false)}
                   className="flex items-center gap-2 font-bold text-neon-blue hover:text-white"
                 >

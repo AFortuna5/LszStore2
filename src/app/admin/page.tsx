@@ -85,7 +85,10 @@ export default async function AdminPage() {
             </div>
           </div>
 
-          <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-6">
+          <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-7">
+            <Link href="/admin/financeiro" className="rounded border border-neon-blue bg-neon-blue/10 p-5 text-white hover:bg-neon-blue hover:text-black">
+              Pagamentos e Stripe
+            </Link>
             <Link href="/admin/produtos" className="rounded border border-border bg-dark-blue p-5 text-white hover:border-neon-blue">
               Gerenciar produtos e categorias
             </Link>

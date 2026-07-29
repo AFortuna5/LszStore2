@@ -49,6 +49,7 @@ type CheckoutOrderInput = {
 };
 
 const orderInclude = {
+  store: true,
   user: {
     select: {
       id: true,
@@ -99,6 +100,12 @@ export async function createOrderFromCart(
         category: true,
       },
     });
+
+    const storeIds = new Set(products.map((product) => product.storeId));
+    if (storeIds.size !== 1) throw new Error("O carrinho deve conter produtos de uma unica loja");
+    const storeId = [...storeIds][0];
+    const store = await tx.store.findUnique({ where: { id: storeId } });
+    if (!store) throw new Error("Loja nao encontrada");
 
     const productsById = new Map(
       products.map((product) => [product.id, product])
@@ -174,6 +181,7 @@ export async function createOrderFromCart(
     const order = await tx.order.create({
       data: {
         userId,
+        storeId,
         addressId: shippingAddress?.id,
         subtotal,
         discountAmount,

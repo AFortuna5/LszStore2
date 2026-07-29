@@ -131,9 +131,16 @@ export async function POST(req: Request) {
     }
     if (!normalizedImages) return jsonError("Imagem e obrigatoria");
 
+    const store = await prisma.store.findFirst({
+      where: { OR: [{ ownerId: session.id }, { members: { some: { userId: session.id, role: { in: ["OWNER", "ADMIN"] } } } }] },
+      orderBy: { createdAt: "asc" },
+    }) ?? await prisma.store.findFirst({ orderBy: { createdAt: "asc" } });
+    if (!store) return jsonError("Cadastre uma loja antes de criar produtos", 409);
+
     const newProduct = await prisma.$transaction(async (tx) => {
       const product = await tx.product.create({
         data: {
+        storeId: store.id,
         name: name.trim(),
         slug: normalizedSlug ?? name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
         description: isNonEmptyString(description) ? description.trim() : "",

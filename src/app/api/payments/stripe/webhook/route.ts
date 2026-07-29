@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   if (!signature) return Response.json({ error: "Assinatura ausente" }, { status: 400 });
 
   try {
-    const payload = await req.text();
+    const payload = Buffer.from(await req.arrayBuffer());
     const event = constructStripeEvent(payload, signature);
     await processStripeEvent(event);
     return Response.json({ received: true });
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     if (error instanceof Stripe.errors.StripeSignatureVerificationError) {
       return Response.json({ error: "Assinatura invalida" }, { status: 400 });
     }
-    console.error(error);
+    console.error("Falha no webhook Stripe", error instanceof Error ? error.message : "erro");
     return Response.json({ error: "Falha ao processar notificacao" }, { status: 500 });
   }
 }
