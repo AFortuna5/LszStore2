@@ -26,6 +26,8 @@ async function main() {
   await prisma.product.deleteMany();
   await prisma.address.deleteMany();
   await prisma.category.deleteMany();
+  await prisma.storeMember.deleteMany();
+  await prisma.store.deleteMany();
   await prisma.user.deleteMany();
 
   const admin = await prisma.user.create({
@@ -35,6 +37,10 @@ async function main() {
       password: hashPassword("admin123"),
       role: "ADMIN",
     },
+  });
+
+  const store = await prisma.store.create({
+    data: { name: "LSZ Store", slug: "lsz-store", ownerId: admin.id },
   });
 
   const categories = await Promise.all([
@@ -151,6 +157,7 @@ async function main() {
         isNew: productInput.isNew,
         isPremium: productInput.collection === "Night Select",
         categoryId: category.id,
+        storeId: store.id,
       },
     });
 

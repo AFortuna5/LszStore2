@@ -71,6 +71,8 @@ export async function PATCH(req: Request, context: RouteContext) {
     const order = await prisma.$transaction(async (tx) => {
       const current = await tx.order.findUnique({ where: { id }, include: { items: true } });
       if (!current) throw new Error("ORDER_NOT_FOUND");
+      if (status === "PAID" && current.paymentStatus !== "APPROVED") throw new Error("PAYMENT_REQUIRES_WEBHOOK");
+      if (status === "CANCELLED" && current.paymentStatus === "APPROVED") throw new Error("PAID_ORDER_REQUIRES_REFUND");
       if (status === "CANCELLED" && current.status !== "CANCELLED") {
         for (const item of current.items) {
           await changeInventory(tx, { productId: item.productId, variantId: item.variantId }, item.quantity, {
@@ -88,7 +90,7 @@ export async function PATCH(req: Request, context: RouteContext) {
       }
       return tx.order.update({
         where: { id },
-        data: { ...(status ? { status } : {}), ...(status === "PAID" ? { paymentStatus: "APPROVED" } : {}), ...(trackingCode ? { trackingCode } : {}) },
+        data: { ...(status ? { status } : {}), ...(trackingCode ? { trackingCode } : {}) },
         include: orderInclude,
       });
     });
@@ -104,6 +106,8 @@ export async function PATCH(req: Request, context: RouteContext) {
   } catch (error) {
     console.error(error);
     if (String(error).includes("ORDER_NOT_FOUND")) return jsonError("Pedido nao encontrado", 404);
+    if (String(error).includes("PAYMENT_REQUIRES_WEBHOOK")) return jsonError("O pagamento so pode ser confirmado pelo webhook da Stripe", 409);
+    if (String(error).includes("PAID_ORDER_REQUIRES_REFUND")) return jsonError("Reembolse o pagamento antes de cancelar o pedido", 409);
     return jsonError("Erro ao atualizar o pedido", 500);
   }
 }
