@@ -25,6 +25,13 @@ export async function POST(req: Request) {
       accountId = account.id;
       await prisma.store.update({ where: { id: store.id }, data: { stripeAccountId: accountId, stripeAccountStatus: "ONBOARDING_INCOMPLETE", stripeConnectedAt: new Date() } });
     }
+    try {
+      await stripe.accounts.update(accountId, {
+        capabilities: { pix_payments: { requested: true } },
+      });
+    } catch (error) {
+      console.warn("Capacidade Pix ainda indisponivel para a conta conectada", error instanceof Error ? error.message : "erro");
+    }
     const link = await stripe.accountLinks.create({
       account: accountId, type: "account_onboarding",
       refresh_url: `${env.appUrl}/admin/financeiro?refresh=true`, return_url: `${env.appUrl}/admin/financeiro?success=true`,
