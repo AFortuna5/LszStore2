@@ -17,4 +17,13 @@ describe("Stripe Connect commission", () => {
     expect(() => platformFee(1000, -1)).toThrow();
     expect(() => platformFee(1000, 100)).toThrow();
   });
+
+  it("orienta ativacao quando a conta principal ainda nao aderiu ao Connect", async () => {
+    const { stripeConnectSetupIssue } = await import("../src/server/services/stores");
+    expect(stripeConnectSetupIssue(new Error("You can only create new accounts if you've signed up for Connect"))).toEqual({
+      code: "STRIPE_CONNECT_NOT_ENABLED",
+      message: "Ative o Stripe Connect na sua conta principal e tente novamente.",
+      actionUrl: "https://dashboard.stripe.com/connect",
+    });
+  });
 });

@@ -4,7 +4,7 @@ import { readSessionFromRequest } from "@/server/auth/session";
 import { env } from "@/server/config/env";
 import { prisma } from "@/server/database/client";
 import { jsonError } from "@/server/http/api";
-import { findManagedStore } from "@/server/services/stores";
+import { findManagedStore, stripeConnectSetupIssue } from "@/server/services/stores";
 import { stripeClient } from "@/server/stripe/client";
 
 export async function POST(req: Request) {
@@ -39,6 +39,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ url: link.url });
   } catch (error) {
     console.error("Falha ao iniciar onboarding Stripe", error instanceof Error ? error.message : "erro");
+    const setupIssue = stripeConnectSetupIssue(error);
+    if (setupIssue) return NextResponse.json({ error: setupIssue.message, code: setupIssue.code, actionUrl: setupIssue.actionUrl }, { status: 409 });
     return jsonError("Nao foi possivel iniciar a conexao com a Stripe", 502);
   }
 }

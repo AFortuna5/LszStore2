@@ -10,8 +10,9 @@ export default function StripeConnectPanel() {
   const [data, setData] = useState<StripeStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [actionUrl, setActionUrl] = useState("");
   const load = useCallback(async () => {
-    setLoading(true); setError("");
+    setLoading(true); setError(""); setActionUrl("");
     const response = await fetch("/api/stripe/connect/status", { cache: "no-store" });
     const payload = await response.json();
     if (!response.ok) setError(payload.error ?? "Nao foi possivel consultar a Stripe"); else setData(payload);
@@ -27,16 +28,20 @@ export default function StripeConnectPanel() {
     return () => { active = false; };
   }, []);
   async function connect() {
-    setLoading(true); setError("");
+    setLoading(true); setError(""); setActionUrl("");
     const response = await fetch("/api/stripe/connect/account", { method: "POST" });
     const payload = await response.json();
-    if (response.ok && payload.url) window.location.assign(payload.url); else { setError(payload.error ?? "Nao foi possivel abrir a Stripe"); setLoading(false); }
+    if (response.ok && payload.url) window.location.assign(payload.url); else {
+      setError(payload.error ?? "Nao foi possivel abrir a Stripe");
+      setActionUrl(typeof payload.actionUrl === "string" ? payload.actionUrl : "");
+      setLoading(false);
+    }
   }
   const labels: Record<string, string> = { NOT_CONNECTED: "Nao conectado", ONBOARDING_INCOMPLETE: "Cadastro incompleto", PENDING_REVIEW: "Em analise", RESTRICTED: "Com pendencias", ACTIVE: "Ativo", SUSPENDED: "Suspenso" };
   return <section className="min-h-screen bg-black py-12"><div className="container mx-auto max-w-4xl px-4 md:px-6">
     <Link href="/admin" className="inline-flex items-center gap-2 text-sm font-bold uppercase text-silver hover:text-neon-blue"><ArrowLeft size={17} /> Painel</Link>
     <p className="mt-8 text-sm font-bold uppercase text-neon-blue">Financeiro</p><h1 className="mt-2 font-montserrat text-4xl font-black uppercase text-white">Pagamentos e Stripe</h1>
-    {error && <p className="mt-6 rounded border border-red-500/50 bg-red-500/10 p-4 text-red-200">{error}</p>}
+    {error && <div className="mt-6 rounded border border-red-500/50 bg-red-500/10 p-4 text-red-200"><p>{error}</p>{actionUrl && <a href={actionUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex rounded bg-white px-4 py-2 text-sm font-bold uppercase text-black hover:bg-neon-blue">Ativar Stripe Connect</a>}</div>}
     <div className="mt-8 rounded-lg border border-border bg-dark-blue p-6">
       {loading && !data ? <p className="text-silver">Consultando status seguro...</p> : data && <>
         <div className="flex flex-wrap items-start justify-between gap-4"><div><h2 className="text-xl font-bold text-white">{data.storeName}</h2><p className="mt-2 text-silver">{labels[data.status] ?? data.status}</p></div><span className={`rounded px-3 py-2 text-xs font-bold uppercase ${data.status === "ACTIVE" ? "bg-emerald-400 text-black" : "bg-amber-400 text-black"}`}>{data.status === "ACTIVE" ? "Conta conectada" : labels[data.status] ?? data.status}</span></div>

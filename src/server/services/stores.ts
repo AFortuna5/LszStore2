@@ -6,6 +6,18 @@ import type { SessionUser } from "@/server/auth/session";
 import { env } from "@/server/config/env";
 import { prisma } from "@/server/database/client";
 
+export function stripeConnectSetupIssue(error: unknown) {
+  const message = error instanceof Error ? error.message : "";
+  if (/signed up for Connect/i.test(message)) {
+    return {
+      code: "STRIPE_CONNECT_NOT_ENABLED",
+      message: "Ative o Stripe Connect na sua conta principal e tente novamente.",
+      actionUrl: "https://dashboard.stripe.com/connect",
+    };
+  }
+  return null;
+}
+
 export async function findManagedStore(user: SessionUser, storeId?: string) {
   return prisma.store.findFirst({
     where: {
