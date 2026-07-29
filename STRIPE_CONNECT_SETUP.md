@@ -68,9 +68,11 @@ Eventos tratados:
 
 No Dashboard de produção, crie um endpoint para `https://SEU_DOMINIO/api/payments/stripe/webhook`, habilite **Listen to events on Connected accounts** e selecione os eventos acima.
 
-## Checkout e comissão
+## Checkout, Pix e comissão
 
-Use cartões de teste oficiais da Stripe no Checkout. Confirme no Dashboard que a cobrança aparece na conta conectada e que a Application Fee aparece na plataforma. O pedido grava a comissão em centavos em `platformFeeAmount`.
+O Checkout usa formas de pagamento dinâmicas da Stripe. Ative Pix em **Configurações → Formas de pagamento** no Dashboard da conta principal. Em Direct Charges, a conta conectada também precisa ter Pix ativo ou a capacidade `pix_payments`; caso contrário, somente os métodos habilitados naquela conta serão exibidos.
+
+Use cartões de teste oficiais da Stripe no Checkout e o fluxo de teste do Pix disponibilizado no Dashboard. Confirme que a cobrança aparece na conta correta e que, nas vendas Connect, a Application Fee aparece na plataforma. O pedido grava a comissão em centavos em `platformFeeAmount`.
 
 A prioridade do percentual é `Store.commissionPercentage`, seguida de `STRIPE_DEFAULT_COMMISSION_PERCENTAGE`. Apenas administradores da plataforma podem alterar a configuração por `PATCH /api/admin/stores/:id/commission` com `{ "percentage": 7.5 }`. O endpoint aceita de 0 a 100; no checkout, uma comissão que alcance o total é rejeitada.
 

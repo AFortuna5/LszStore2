@@ -230,7 +230,7 @@ export default function CheckoutPage() {
                   ))}
                 </div>
               </div>
-              <div className="rounded border border-border bg-black p-4 text-sm text-silver"><strong className="text-white">Pagamento seguro pela Stripe</strong><p className="mt-1">O pagamento com cartao sera concluido no ambiente protegido da Stripe.</p></div>
+              <div className="rounded border border-border bg-black p-4 text-sm text-silver"><strong className="text-white">Pagamento seguro pela Stripe</strong><p className="mt-1">Escolha cartão ou Pix no ambiente protegido da Stripe.</p></div>
               {stockIssues.length > 0 && (
                 <div className="rounded border border-red-500 bg-red-950/40 p-4 text-sm text-red-200">
                   <strong>Revise o estoque antes de pagar:</strong>
@@ -275,7 +275,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex gap-3 text-silver">
                   <CreditCard className="text-neon-blue" size={20} />
-                  Pagamento seguro com cartao
+                  Pagamento seguro com cartão ou Pix
                 </div>
               </div>
               <div className="mt-6 space-y-3 text-sm text-silver">

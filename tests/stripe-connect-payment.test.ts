@@ -43,6 +43,7 @@ describe("Stripe Connect payment", () => {
       payment_intent_data: expect.objectContaining({ application_fee_amount: 500 }),
       metadata: { orderId: "order_1", storeId: "store_1" },
     }), { stripeAccount: "acct_store", idempotencyKey: "checkout_order_1" });
+    expect(mocks.checkoutCreate.mock.calls[0][0]).not.toHaveProperty("payment_method_types");
   });
 
   it("mantem checkout da plataforma enquanto a loja nao conclui o Connect", async () => {
@@ -62,6 +63,7 @@ describe("Stripe Connect payment", () => {
       },
       metadata: { orderId: "order_2", storeId: "store_1" },
     }), { idempotencyKey: "checkout_order_2" });
+    expect(mocks.checkoutCreate.mock.calls[0][0]).not.toHaveProperty("payment_method_types");
     expect(mocks.update).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({ stripeConnectedAccountId: null, platformFeeAmount: 0 }),
     }));

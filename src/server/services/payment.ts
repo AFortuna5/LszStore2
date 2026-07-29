@@ -67,7 +67,6 @@ export async function createPaymentSession(orderId: string) {
   const checkout = await stripe.checkout.sessions.create({
     mode: "payment",
     locale: "pt-BR",
-    payment_method_types: ["card"],
     client_reference_id: order.id,
     customer_email: order.customerEmail,
     success_url: `${env.appUrl}/checkout/retorno?session_id={CHECKOUT_SESSION_ID}`,
