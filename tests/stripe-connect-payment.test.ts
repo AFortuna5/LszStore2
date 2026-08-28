@@ -4,7 +4,7 @@ vi.mock("server-only", () => ({}));
 
 const mocks = vi.hoisted(() => ({
   findUnique: vi.fn(), update: vi.fn(), eventCreate: vi.fn(), eventUpdate: vi.fn(),
-  checkoutCreate: vi.fn(), checkoutRetrieve: vi.fn(), couponCreate: vi.fn(),
+  checkoutCreate: vi.fn(), checkoutRetrieve: vi.fn(), couponCreate: vi.fn(), refundCreate: vi.fn(),
 }));
 
 vi.mock("../src/server/config/env", () => ({ env: {
@@ -22,7 +22,7 @@ vi.mock("../src/server/stripe/client", () => ({
     ...(account ? { stripeAccount: account } : {}),
     ...(idempotencyKey ? { idempotencyKey } : {}),
   }),
-  stripeClient: () => ({ checkout: { sessions: { create: mocks.checkoutCreate, retrieve: mocks.checkoutRetrieve } }, coupons: { create: mocks.couponCreate }, webhooks: { constructEvent: vi.fn() } }),
+  stripeClient: () => ({ checkout: { sessions: { create: mocks.checkoutCreate, retrieve: mocks.checkoutRetrieve } }, coupons: { create: mocks.couponCreate }, refunds: { create: mocks.refundCreate }, webhooks: { constructEvent: vi.fn() } }),
 }));
 
 describe("Stripe Connect payment", () => {
@@ -75,5 +75,13 @@ describe("Stripe Connect payment", () => {
     await processStripeEvent({ id: "evt_1", type: "customer.created", account: "acct_store", data: { object: {} } } as never);
     expect(mocks.eventCreate).toHaveBeenCalledTimes(1);
     expect(mocks.eventUpdate).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ status: "PROCESSED" }) }));
+  });
+
+  it("mantem o reembolso disponivel quando o checkout usou a conta principal", async () => {
+    mocks.findUnique.mockResolvedValue({ id: "order_platform", stripePaymentIntentId: "pi_platform", stripeConnectedAccountId: null, refundedAt: null, paymentStatus: "APPROVED" });
+    mocks.refundCreate.mockResolvedValue({ id: "re_platform" });
+    const { refundOrder } = await import("../src/server/services/payment");
+    await refundOrder("order_platform");
+    expect(mocks.refundCreate).toHaveBeenCalledWith({ payment_intent: "pi_platform", refund_application_fee: false }, { idempotencyKey: "refund_order_platform" });
   });
 });

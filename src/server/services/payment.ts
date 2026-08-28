@@ -200,6 +200,8 @@ export async function processStripeEvent(event: Stripe.Event) {
 
 export async function refundOrder(orderId: string, refundApplicationFee = false) {
   const order = await prisma.order.findUnique({ where: { id: orderId } });
-  if (!order?.stripePaymentIntentId || !order.stripeConnectedAccountId || order.refundedAt) throw new Error("Pedido nao elegivel para reembolso");
+  if (!order?.stripePaymentIntentId || order.refundedAt || order.paymentStatus !== "APPROVED") {
+    throw new Error("Pedido nao elegivel para reembolso");
+  }
   return stripeClient().refunds.create({ payment_intent: order.stripePaymentIntentId, refund_application_fee: refundApplicationFee }, stripeRequestOptions(order.stripeConnectedAccountId, `refund_${order.id}`));
 }
