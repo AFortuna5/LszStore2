@@ -10,13 +10,18 @@ import { changeInventory } from "@/server/services/inventory";
 import { commissionPercentage, platformFee, syncStoreStripeAccount } from "@/server/services/stores";
 import { stripeClient, stripeRequestOptions } from "@/server/stripe/client";
 
+function webhookSecrets() {
+  return env.stripeWebhookSecrets ?? (env.stripeWebhookSecret ? [env.stripeWebhookSecret] : []);
+}
+
 export function getStripeReadiness() {
+  const secrets = webhookSecrets();
   const missing: string[] = [];
   if (env.paymentProvider !== "stripe") missing.push("PAYMENT_PROVIDER");
   if (!env.stripeSecretKey) missing.push("STRIPE_SECRET_KEY");
-  if (!env.stripeWebhookSecret) missing.push("STRIPE_WEBHOOK_SECRET");
+  if (!secrets.length) missing.push("STRIPE_WEBHOOK_SECRET");
   if (env.stripeSecretKey && !env.stripeSecretKey.startsWith(env.stripeLiveMode ? "sk_live_" : "sk_test_")) missing.push("STRIPE_KEY_MODE");
-  if (env.stripeWebhookSecret && !env.stripeWebhookSecret.startsWith("whsec_")) missing.push("STRIPE_WEBHOOK_SECRET_INVALID");
+  if (secrets.some((secret) => !secret.startsWith("whsec_"))) missing.push("STRIPE_WEBHOOK_SECRET_INVALID");
   if (!Number.isFinite(env.stripeDefaultCommissionPercentage) || env.stripeDefaultCommissionPercentage < 0 || env.stripeDefaultCommissionPercentage > 100) missing.push("STRIPE_DEFAULT_COMMISSION_PERCENTAGE");
   if (process.env.NODE_ENV === "production" && !env.appUrl.startsWith("https://")) missing.push("APP_URL_HTTPS");
   return { ready: missing.length === 0, missing };
@@ -144,8 +149,17 @@ async function applyReversal(paymentIntentId: string, amount: number, accountId:
 }
 
 export function constructStripeEvent(payload: string | Buffer, signature: string) {
-  if (!env.stripeWebhookSecret) throw new Error("Webhook Stripe nao configurado");
-  return stripeClient().webhooks.constructEvent(payload, signature, env.stripeWebhookSecret, 300);
+  const secrets = webhookSecrets();
+  if (!secrets.length) throw new Error("Webhook Stripe nao configurado");
+  let lastError: unknown;
+  for (const secret of secrets) {
+    try {
+      return stripeClient().webhooks.constructEvent(payload, signature, secret, 300);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError;
 }
 
 async function handleStripeEvent(event: Stripe.Event) {

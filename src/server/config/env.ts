@@ -14,6 +14,7 @@ export const env = {
   melhorEnvioSandbox: process.env.MELHOR_ENVIO_SANDBOX === "true",
   stripeSecretKey: process.env.STRIPE_SECRET_KEY,
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+  stripeWebhookSecrets: (process.env.STRIPE_WEBHOOK_SECRET ?? "").split(",").map((value) => value.trim()).filter(Boolean),
   stripePublishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
   stripeDefaultCommissionPercentage: Number(process.env.STRIPE_DEFAULT_COMMISSION_PERCENTAGE ?? 5),
   stripeLiveMode: process.env.STRIPE_LIVE_MODE === "true",
@@ -33,7 +34,7 @@ export function assertProductionConfig() {
   if (!process.env.DATABASE_URL) missing.push("DATABASE_URL");
   if (process.env.PAYMENT_PROVIDER === "stripe") {
     if (!process.env.STRIPE_SECRET_KEY) missing.push("STRIPE_SECRET_KEY");
-    if (!process.env.STRIPE_WEBHOOK_SECRET) missing.push("STRIPE_WEBHOOK_SECRET");
+    if (!env.stripeWebhookSecrets.length) missing.push("STRIPE_WEBHOOK_SECRET");
     if (!Number.isFinite(env.stripeDefaultCommissionPercentage) || env.stripeDefaultCommissionPercentage < 0 || env.stripeDefaultCommissionPercentage > 100) missing.push("STRIPE_DEFAULT_COMMISSION_PERCENTAGE");
     if (!process.env.APP_URL?.startsWith("https://")) missing.push("APP_URL com HTTPS");
   }
