@@ -26,4 +26,15 @@ describe("Stripe Connect commission", () => {
       actionUrl: "https://dashboard.stripe.com/connect",
     });
   });
+
+  it("orienta a concluir o perfil da plataforma antes de criar contas reais", async () => {
+    const { stripeConnectSetupIssue } = await import("../src/server/services/stores");
+    expect(stripeConnectSetupIssue(new Error(
+      "You must complete your platform profile to use Connect and create live connected accounts. Visit your dashboard to answer the questionnaire."
+    ))).toEqual({
+      code: "STRIPE_CONNECT_PLATFORM_PROFILE_INCOMPLETE",
+      message: "Conclua o perfil da plataforma Connect na Stripe e tente novamente.",
+      actionUrl: "https://dashboard.stripe.com/settings/connect/platform-profile",
+    });
+  });
 });

@@ -8,6 +8,13 @@ import { prisma } from "@/server/database/client";
 
 export function stripeConnectSetupIssue(error: unknown) {
   const message = error instanceof Error ? error.message : "";
+  if (/complete your platform profile|platform profile.*(complete|questionnaire)/i.test(message)) {
+    return {
+      code: "STRIPE_CONNECT_PLATFORM_PROFILE_INCOMPLETE",
+      message: "Conclua o perfil da plataforma Connect na Stripe e tente novamente.",
+      actionUrl: "https://dashboard.stripe.com/settings/connect/platform-profile",
+    };
+  }
   if (/signed up for Connect/i.test(message)) {
     return {
       code: "STRIPE_CONNECT_NOT_ENABLED",
