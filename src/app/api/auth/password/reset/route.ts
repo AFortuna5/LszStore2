@@ -2,8 +2,12 @@ import { createHash } from "crypto";
 import { isNonEmptyString, isRecord, jsonError, readJson } from "@/server/http/api";
 import { hashPassword } from "@/server/auth/session";
 import { prisma } from "@/server/database/client";
+import { getClientIp, rateLimit } from "@/server/security/rate-limit";
 
 export async function POST(req: Request) {
+  if (!(await rateLimit(`password-reset:${getClientIp(req)}`, 10, 15 * 60_000)).allowed) {
+    return jsonError("Muitas tentativas. Aguarde alguns minutos.", 429);
+  }
   const body = await readJson(req);
   if (!isRecord(body) || !isNonEmptyString(body.token) || !isNonEmptyString(body.password) || body.password.length < 8) return jsonError("Token invalido ou senha muito curta");
   const tokenHash = createHash("sha256").update(body.token).digest("hex");

@@ -19,6 +19,7 @@ import { getShippingQuotes } from "@/server/services/shipping";
 import { createPaymentSession, getStripeReadiness } from "@/server/services/payment";
 import { escapeHtml, sendEmail } from "@/server/services/email";
 import { CouponValidationError } from "@/server/services/coupons";
+import { rateLimit } from "@/server/security/rate-limit";
 
 async function existingCheckoutResponse(checkoutKey: string, userId: string) {
   const order = await prisma.order.findUnique({
@@ -43,7 +44,6 @@ export async function GET(req: Request) {
     if (!session) {
       return jsonError("Nao autorizado", 401);
     }
-
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get("userId")?.trim();
     const status = searchParams.get("status")?.trim();
@@ -85,6 +85,9 @@ export async function POST(req: Request) {
     const session = readSessionFromRequest(req);
     if (!session) {
       return jsonError("Nao autorizado", 401);
+    }
+    if (!(await rateLimit(`checkout:${session.id}`, 12, 10 * 60_000)).allowed) {
+      return jsonError("Muitas tentativas de checkout. Aguarde alguns minutos.", 429);
     }
 
     const { userId, items, address, paymentMethod, shippingServiceId, couponCode } = body;

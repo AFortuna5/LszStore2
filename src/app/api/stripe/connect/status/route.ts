@@ -4,6 +4,7 @@ import { readSessionFromRequest } from "@/server/auth/session";
 import { jsonError } from "@/server/http/api";
 import { commissionPercentage, findManagedStore, syncStoreStripeAccount } from "@/server/services/stores";
 import { stripeClient } from "@/server/stripe/client";
+import { env } from "@/server/config/env";
 
 export async function GET(req: Request) {
   try {
@@ -19,6 +20,7 @@ export async function GET(req: Request) {
       detailsSubmitted: current.stripeDetailsSubmitted, onboardingCompleted: current.stripeOnboardingCompleted,
       status: current.stripeAccountStatus, requirements: current.stripeRequirements.map(() => "Informacao adicional solicitada pela Stripe"),
       commissionPercentage: commissionPercentage(current),
+      webhookDestinationsConfigured: env.stripeWebhookSecrets.length,
     });
   } catch (error) {
     console.error("Falha ao consultar conta Stripe", error instanceof Error ? error.message : "erro");

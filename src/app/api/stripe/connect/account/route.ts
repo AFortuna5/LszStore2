@@ -6,11 +6,15 @@ import { prisma } from "@/server/database/client";
 import { jsonError } from "@/server/http/api";
 import { findManagedStore, stripeConnectSetupIssue } from "@/server/services/stores";
 import { stripeClient } from "@/server/stripe/client";
+import { rateLimit } from "@/server/security/rate-limit";
 
 export async function POST(req: Request) {
   try {
     const session = readSessionFromRequest(req);
     if (!session) return jsonError("Nao autorizado", 401);
+    if (!(await rateLimit(`stripe-connect:${session.id}`, 5, 15 * 60_000)).allowed) {
+      return jsonError("Muitas tentativas. Aguarde alguns minutos.", 429);
+    }
     const storeId = new URL(req.url).searchParams.get("storeId") ?? undefined;
     const store = await findManagedStore(session, storeId);
     if (!store || !store.ownerId) return jsonError("Loja nao encontrada ou sem proprietario", 404);
