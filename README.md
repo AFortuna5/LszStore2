@@ -4,18 +4,7 @@ Loja virtual de moda com catálogo responsivo, carrinho, área do cliente e pain
 
 **Status: em desenvolvimento.** Este repositório apresenta a implementação e a evolução do projeto. O onboarding financeiro, a validação completa dos fluxos de pagamento e a revisão operacional ainda são requisitos para considerar a loja pronta para operação.
 
-[Visitar o site](https://lszstore2.vercel.app) · [Segurança](SECURITY.md) · [Configuração Stripe](STRIPE_CONNECT_SETUP.md)
-
-## Telas do projeto
-
-Capturas reais das telas públicas em 21/09/2026, em layout compacto. O catálogo ainda contém conteúdo demonstrativo. Nenhum pedido foi enviado para produzir as imagens.
-
-<p>
-  <a href="docs/screenshots/produto.png"><img src="docs/screenshots/produto.png" width="190" alt="Detalhes e variações do produto"></a>
-  <a href="docs/screenshots/carrinho.png"><img src="docs/screenshots/carrinho.png" width="190" alt="Carrinho e resumo do pedido"></a>
-  <a href="docs/screenshots/acesso-cliente.png"><img src="docs/screenshots/acesso-cliente.png" width="190" alt="Formulários vazios de login e cadastro"></a>
-  <a href="docs/screenshots/colecoes.png"><img src="docs/screenshots/colecoes.png" width="190" alt="Página de coleções"></a>
-</p>
+[Visitar o site](https://lszstore2.vercel.app) · 
 
 ## Funcionalidades implementadas
 
