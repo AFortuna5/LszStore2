@@ -116,9 +116,3 @@ Na Vercel, configure os segredos pelo painel da hospedagem. `npm run vercel-buil
 - Validar pagamentos, falhas, eventos repetidos ou fora de ordem, reembolsos e disputas em ambiente de testes antes do lançamento.
 - Revisar conteúdo comercial, políticas da loja, acessibilidade e experiência em dispositivos reais.
 - Confirmar monitoramento, backups e recuperação operacional.
-
-## Segurança e uso do código
-
-Consulte [SECURITY.md](SECURITY.md). O repositório é público: código e histórico podem ser consultados, clonados e copiados. Isso não dá acesso às credenciais privadas da hospedagem.
-
-Este projeto é divulgado como portfólio. Nenhuma licença open source é concedida neste repositório. Marcas, fotografias e demais materiais de terceiros permanecem sujeitos aos direitos de seus titulares; solicite autorização antes de reutilizá-los. A publicação não impede tecnicamente a cópia do material.
