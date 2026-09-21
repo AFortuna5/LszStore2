@@ -43,3 +43,31 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# Local tooling, reports and deployment copies
+/.local-artifacts/
+/.codex-deploy-*/
+/.codex/
+/.agents/
+/.vscode/
+/.idea/
+/playwright-report/
+/test-results/
+*.log
+
+# Private databases, backups and credentials
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.sqlite3-*
+*.dump
+*.backup
+*.bak
+*.p12
+*.pfx
+*.key
+credentials.json
+service-account*.json
+Thumbs.db

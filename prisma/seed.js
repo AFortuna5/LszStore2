@@ -16,6 +16,18 @@ function hashPassword(password) {
 }
 
 async function main() {
+  const databaseUrl = new URL(process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/lszstore");
+  if (process.env.NODE_ENV === "production" || process.env.VERCEL || !["localhost", "127.0.0.1", "[::1]", "postgres"].includes(databaseUrl.hostname)) {
+    throw new Error("Seed permitido somente em banco local de desenvolvimento.");
+  }
+  if (process.env.ALLOW_DESTRUCTIVE_SEED !== "true") {
+    throw new Error("O seed apaga os dados locais. Defina ALLOW_DESTRUCTIVE_SEED=true para confirmar.");
+  }
+  const adminEmail = process.env.SEED_ADMIN_EMAIL;
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD;
+  if (!adminEmail?.includes("@") || !adminPassword || adminPassword.length < 16) {
+    throw new Error("Configure SEED_ADMIN_EMAIL e SEED_ADMIN_PASSWORD (minimo 16 caracteres) antes do seed.");
+  }
   await prisma.inventoryMovement.deleteMany();
   await prisma.contactMessage.deleteMany();
   await prisma.newsletterSubscriber.deleteMany();
@@ -33,8 +45,8 @@ async function main() {
   const admin = await prisma.user.create({
     data: {
       name: "Administrador LSZ",
-      email: "admin@lszstore.com.br",
-      password: hashPassword("admin123"),
+      email: adminEmail,
+      password: hashPassword(adminPassword),
       role: "ADMIN",
     },
   });

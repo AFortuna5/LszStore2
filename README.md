@@ -1,116 +1,124 @@
-# LSZ Store
+# LSZ Store — e-commerce full stack
 
-Loja virtual construída com Next.js, React, TypeScript, Prisma e PostgreSQL. O projeto inclui catálogo, carrinho, checkout, contas de clientes e painel administrativo.
+Loja virtual de moda com catálogo responsivo, carrinho, área do cliente e painel administrativo. Desenvolvida com Next.js, React e TypeScript, com persistência em PostgreSQL e integração com Stripe Checkout e Connect.
 
-## Estrutura do projeto
+**Status: em desenvolvimento.** Este repositório apresenta a implementação e a evolução do projeto. O onboarding financeiro, a validação completa dos fluxos de pagamento e a revisão operacional ainda são requisitos para considerar a loja pronta para operação.
+
+[Visitar o site](https://lszstore2.vercel.app) · [Segurança](SECURITY.md) · [Configuração Stripe](STRIPE_CONNECT_SETUP.md)
+
+## Telas do projeto
+
+Capturas reais das telas públicas em 21/09/2026, em layout compacto. O catálogo ainda contém conteúdo demonstrativo. Nenhum pedido foi enviado para produzir as imagens.
+
+<p>
+  <a href="docs/screenshots/produto.png"><img src="docs/screenshots/produto.png" width="190" alt="Detalhes e variações do produto"></a>
+  <a href="docs/screenshots/carrinho.png"><img src="docs/screenshots/carrinho.png" width="190" alt="Carrinho e resumo do pedido"></a>
+  <a href="docs/screenshots/acesso-cliente.png"><img src="docs/screenshots/acesso-cliente.png" width="190" alt="Formulários vazios de login e cadastro"></a>
+  <a href="docs/screenshots/colecoes.png"><img src="docs/screenshots/colecoes.png" width="190" alt="Página de coleções"></a>
+</p>
+
+## Funcionalidades implementadas
+
+- Catálogo com categorias, marcas, coleções, busca e detalhes de produto.
+- Layout responsivo, banners em carrossel, variações de produto e controle de estoque por SKU.
+- Carrinho, cupons e cálculo de frete no servidor.
+- Cadastro, login, endereços, pedidos e recuperação de senha.
+- Administração de produtos, pedidos, estoque, cupons, atendimento e financeiro.
+- Checkout hospedado pela Stripe; métodos exibidos conforme habilitação e elegibilidade da conta.
+- Connect Express com onboarding hospedado, Direct Charges e comissão configurável, padrão de 5%.
+- Cobrança na conta principal enquanto a conta conectada não está ativa.
+- Confirmação por webhook assinado, registro de eventos e tratamento de reembolsos e disputas.
+- Integrações de e-mail, upload de imagens e frete; sitemap e metadados para SEO.
+
+As funcionalidades financeiras dependem das configurações e liberações da Stripe. A existência do código e de testes automatizados não comprova, por si só, a conclusão de uma transação real de ponta a ponta.
+
+## Tecnologias
+
+| Camada | Tecnologias e finalidade |
+| --- | --- |
+| Aplicação | Next.js 16 (App Router, Route Handlers e renderização no servidor), React 19, TypeScript 5 |
+| Interface | Tailwind CSS 4, Framer Motion, Lucide React, Embla Carousel, clsx e tailwind-merge |
+| Servidor | Node.js; APIs implementadas com Route Handlers do Next.js |
+| Banco | PostgreSQL, Prisma ORM 7, Prisma Migrate, driver pg e adaptador Prisma PostgreSQL |
+| Autenticação | Implementação própria com Node.js Crypto: scrypt para senhas, HMAC para sessões e cookies HTTP-only |
+| Pagamentos | Stripe SDK 22, Checkout, Connect Express e webhooks |
+| Integrações | Melhor Envio para frete, ViaCEP para endereços, Resend para e-mail e Cloudinary para imagens |
+| Imagens | Next Image e Sharp para validação e processamento de uploads |
+| Qualidade | Vitest 4, ESLint 9 e verificação estática com TypeScript |
+| Operação | Git, GitHub, GitHub Actions, Dependabot, Vercel e Docker Compose para PostgreSQL local |
+| Legado | better-sqlite3 para importação opcional de uma base SQLite local; o banco atual é PostgreSQL |
+
+As versões exatas e dependências transitivas estão em `package-lock.json`.
+
+## Organização
 
 ```text
-LszStore2/
-├── prisma/                    # Schema e carga inicial do banco
-├── public/                    # Imagens e arquivos públicos
-├── src/
-│   ├── app/                   # Rotas, layouts e endpoints do Next.js
-│   │   ├── api/               # Entradas HTTP da aplicação
-│   │   └── ...                # Páginas e segmentos de URL
-│   ├── templates/             # Somente interface e componentes visuais
-│   │   ├── admin/             # Interface do painel administrativo
-│   │   ├── cart/              # Componentes do carrinho
-│   │   ├── home/              # Seções da página inicial
-│   │   ├── layout/            # Cabeçalho, rodapé e estrutura visual
-│   │   └── products/          # Cards, grades e ações de produtos
-│   ├── server/                # Código que nunca deve ir para o navegador
-│   │   ├── auth/              # Sessão, senhas e autenticação
-│   │   ├── database/          # Cliente Prisma
-│   │   ├── http/              # Validação e respostas das APIs
-│   │   ├── repositories/      # Consultas ao catálogo
-│   │   └── services/          # Regras de negócio, como pedidos
-│   └── shared/                # Tipos e funções puras compartilhadas
-├── dev.db                     # Backup legado usado somente na migracao
-├── compose.yaml               # PostgreSQL local para desenvolvimento
-└── package.json
+src/app/           Páginas, layouts e APIs
+src/templates/     Componentes de interface por domínio
+src/server/        Autenticação, serviços, segurança e acesso ao banco
+src/shared/        Tipos, configuração pública e funções compartilhadas
+prisma/            Schema, migrações e seed de desenvolvimento
+tests/             Testes automatizados
+scripts/           Operação e migração de dados
+public/            Recursos visuais públicos
 ```
 
-### Regras de organização
+## Desenvolvimento local
 
-- `templates` não acessa Prisma, cookies ou segredos. Dados chegam por propriedades ou pelas APIs.
-- `server` contém autenticação, persistência e regras de negócio e está protegido por `server-only`.
-- `shared` aceita importação tanto no cliente quanto no servidor e não possui dependências exclusivas de Node.js.
-- `app/api` apenas valida a requisição, verifica autorização e chama os módulos de `server`.
-- Novos componentes devem ser colocados no domínio correspondente dentro de `templates`.
-
-## Executando localmente
+Requisitos: Node.js 22.12+ compatível com as dependências, npm e PostgreSQL (ou Docker Compose).
 
 ```bash
-npm install
+npm ci
 cp .env.example .env
 docker compose up -d postgres
-npx prisma generate
 npm run db:deploy
-npm run db:seed
 npm run dev
 ```
 
-A aplicação estará disponível em [http://localhost:3000](http://localhost:3000).
+No PowerShell, substitua `cp` por `Copy-Item .env.example .env`. Abra [localhost:3000](http://localhost:3000).
 
-Conta administrativa inicial para desenvolvimento:
-
-```text
-E-mail: admin@lszstore.com.br
-Senha: admin123
-```
-
-Altere essas credenciais e configure `AUTH_SECRET` antes de publicar o projeto.
-
-### Migrando os dados existentes do SQLite
-
-O arquivo `dev.db` e preservado como fonte. Com o PostgreSQL vazio e as migrations aplicadas, execute:
+Configure `DATABASE_URL`, `DIRECT_URL` e um `AUTH_SECRET` aleatório. Para gerar o segredo localmente:
 
 ```bash
-docker compose up -d postgres
-npm run db:deploy
-npm run db:migrate:sqlite
+node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
 ```
 
-O importador copia IDs, usuarios, produtos, pedidos, enderecos e logs de inventario sem alterar o SQLite original. Ele recusa um PostgreSQL que ja contenha usuarios para evitar mistura acidental de bases. Para uma importacao conscientemente incremental, use `npm run db:migrate:sqlite -- --allow-non-empty`.
+### Dados demonstrativos opcionais
 
-## Verificações
+O comando `npm run db:seed` **apaga o conteúdo do banco local**. Use exclusivamente em uma base descartável. Ele recusa ambiente de produção e destinos de banco não locais.
+
+No seu `.env` privado, defina `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` (no mínimo 16 caracteres) e `ALLOW_DESTRUCTIVE_SEED=true`. Execute o seed e depois retorne `ALLOW_DESTRUCTIVE_SEED=false`. Não há senha administrativa padrão distribuída na versão atual.
+
+### Serviços externos
+
+O catálogo pode ser explorado sem credenciais de pagamento. O checkout exige Stripe configurado; `PAYMENT_PROVIDER=manual` não cria pagamentos reais nem oferece um checkout manual alternativo.
+
+Para desenvolvimento financeiro, use chaves de teste e `STRIPE_LIVE_MODE=false`, com um endpoint de webhook correspondente. Cadastre os eventos descritos em [STRIPE_CONNECT_SETUP.md](STRIPE_CONNECT_SETUP.md). Nunca use credenciais de produção em demonstrações.
+
+Resend, Melhor Envio e Cloudinary são configurados pelas variáveis descritas em `.env.example`. A disponibilidade de cada serviço depende dessas configurações; sem Resend configurado, e-mails não são enviados.
+
+## Verificação e deploy
 
 ```bash
 npm run lint
+npm test
 npx tsc --noEmit
 npm run build
 ```
 
-Ou execute toda a validação de uma vez:
+`npm run check` executa a sequência completa. O build pode precisar de acesso ao Google Fonts.
 
-```bash
-npm run check
-```
+Na Vercel, configure os segredos pelo painel da hospedagem. `npm run vercel-build` aplica `prisma migrate deploy` quando `VERCEL_ENV=production` antes do build. Nunca execute o seed nem `migrate dev` em produção. Revise migrações e mantenha backups próprios do banco.
 
-## Integrações de produção
+## Pendências e limites
 
-Copie `.env.example` para `.env` e preencha as credenciais. Sem credenciais, o projeto permanece em modo local: pagamento manual, frete padrão e e-mails apenas armazenados no painel.
+- Concluir e validar onboarding, identidade e habilitações dos provedores financeiros.
+- Validar pagamentos, falhas, eventos repetidos ou fora de ordem, reembolsos e disputas em ambiente de testes antes do lançamento.
+- Revisar conteúdo comercial, políticas da loja, acessibilidade e experiência em dispositivos reais.
+- Confirmar monitoramento, backups e recuperação operacional.
 
-- **PostgreSQL:** configure `DATABASE_URL` para a aplicacao e `DIRECT_URL` para migrations. Em producao, aplique o schema com `npm run db:deploy`; nunca use `prisma db push` nem `migrate dev` no banco produtivo.
+## Segurança e uso do código
 
-- **Stripe:** defina `PAYMENT_PROVIDER=stripe`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` e cadastre `https://SEU-DOMINIO/api/payments/stripe/webhook` para os eventos `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.refunded` e `charge.dispute.created`.
-- Para testes, use uma chave `sk_test_...` e `STRIPE_LIVE_MODE=false`. Para cobrar de verdade, use uma chave `sk_live_...`, `STRIPE_LIVE_MODE=true` e um `APP_URL` publico com HTTPS.
-- Guarde a chave secreta e a assinatura `whsec_...` apenas nas variaveis protegidas da hospedagem. Nunca envie esses valores ao navegador nem os versione no Git.
-- Antes de liberar a loja, conclua uma compra de teste e confirme que o pedido muda de `PENDING` para `PAID` depois que o webhook for recebido.
-- **Melhor Envio:** configure `SHIPPING_ORIGIN_ZIP`, `MELHOR_ENVIO_TOKEN` e `MELHOR_ENVIO_SANDBOX`. Use `true` apenas para testes e `false` em produção.
-- **Resend:** configure `RESEND_API_KEY`, valide o domínio e altere `EMAIL_FROM`.
-- **Cloudinary:** informe as três credenciais para liberar upload de imagens no editor de produtos.
-- **Contato público:** substitua telefone, WhatsApp, Instagram e e-mail pelos dados definitivos do cliente.
+Consulte [SECURITY.md](SECURITY.md). O repositório é público: código e histórico podem ser consultados, clonados e copiados. Isso não dá acesso às credenciais privadas da hospedagem.
 
-Antes de publicar, troque a senha inicial do administrador, revise os textos jurídicos com o responsável pela loja, configure backup do banco e teste pagamento/frete com contas sandbox dos provedores.
-
-## Funcionalidades operacionais
-
-- cálculo de frete no servidor e preenchimento de endereço por CEP;
-- Stripe Checkout e sincronização de pagamento por webhook;
-- painel de pedidos, status, cancelamento, estoque e rastreio;
-- escolha de variações e estoque por SKU;
-- recuperação de senha e limitação de tentativas;
-- contato, newsletter e caixa de entrada administrativa;
-- upload de produtos, busca, sitemap, robots e metadados sociais;
-- health check em `/api/health` e CI em `.github/workflows/quality.yml`.
+Este projeto é divulgado como portfólio. Nenhuma licença open source é concedida neste repositório. Marcas, fotografias e demais materiais de terceiros permanecem sujeitos aos direitos de seus titulares; solicite autorização antes de reutilizá-los. A publicação não impede tecnicamente a cópia do material.
