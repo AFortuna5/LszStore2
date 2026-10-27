@@ -15,6 +15,7 @@ import {
   serializeOrder,
 } from "@/server/services/orders";
 import { prisma } from "@/server/database/client";
+import { buildOrderListWhere } from "@/server/services/order-list";
 import { getShippingQuotes } from "@/server/services/shipping";
 import { WHATSAPP_SHIPPING_ID, WHATSAPP_SHIPPING_LABEL } from "@/shared/checkout-whatsapp";
 import { createPaymentSession, getStripeReadiness } from "@/server/services/payment";
@@ -55,11 +56,7 @@ export async function GET(req: Request) {
     const page = toPositiveInt(searchParams.get("page"), 1) ?? 1;
 
     const orders = await prisma.order.findMany({
-      where: {
-        ...(session.role === "ADMIN" ? {} : { userId: session.id }),
-        ...(userId ? { userId } : {}),
-        ...(status ? { status } : {}),
-      },
+      where: buildOrderListWhere(session, { userId, status }),
       include: orderInclude,
       orderBy: {
         createdAt: "desc",
