@@ -16,6 +16,7 @@ import {
 } from "@/server/services/orders";
 import { prisma } from "@/server/database/client";
 import { getShippingQuotes } from "@/server/services/shipping";
+import { WHATSAPP_SHIPPING_ID, WHATSAPP_SHIPPING_LABEL } from "@/shared/checkout-whatsapp";
 import { createPaymentSession, getStripeReadiness } from "@/server/services/payment";
 import { escapeHtml, sendEmail } from "@/server/services/email";
 import { CouponValidationError } from "@/server/services/coupons";
@@ -122,9 +123,14 @@ export async function POST(req: Request) {
     const existingResponse = await existingCheckoutResponse(checkoutKey, session.id);
     if (existingResponse) return existingResponse;
 
-    const requiredAddressFields = ["fullName", "phone", "email", "zipCode", "street", "number", "neighborhood", "city", "state"];
+    const isWhatsAppDelivery = String(shippingServiceId ?? "") === WHATSAPP_SHIPPING_ID;
+    const requiredAddressFields = isWhatsAppDelivery
+      ? ["fullName", "phone", "email"]
+      : ["fullName", "phone", "email", "zipCode", "street", "number", "neighborhood", "city", "state"];
     if (requiredAddressFields.some((field) => !isNonEmptyString(address[field]))) {
-      return jsonError("Preencha todos os dados obrigatorios do endereco");
+      return jsonError(isWhatsAppDelivery
+        ? "Informe nome, telefone e e-mail para continuar"
+        : "Preencha todos os dados obrigatorios do endereco");
     }
 
     const parsedItems = items.map((item) => {
@@ -143,8 +149,15 @@ export async function POST(req: Request) {
     }
 
     const validItems = parsedItems as { productId: string; variantId?: string | null; quantity: number }[];
-    const quotes = await getShippingQuotes(validItems, String(address.zipCode));
-    const selectedQuote = quotes.find((quote) => quote.id === String(shippingServiceId ?? "")) ?? quotes[0];
+    let selectedQuote: { id: string; company: string; name: string; price: number; deliveryDays: number | null };
+    if (isWhatsAppDelivery) {
+      selectedQuote = { id: WHATSAPP_SHIPPING_ID, company: "WhatsApp", name: WHATSAPP_SHIPPING_LABEL, price: 0, deliveryDays: null };
+    } else {
+      const quotes = await getShippingQuotes(validItems, String(address.zipCode));
+      const quote = quotes.find((entry) => entry.id === String(shippingServiceId ?? "")) ?? quotes[0];
+      if (!quote) return jsonError("Nao foi possivel calcular o frete para o endereco informado");
+      selectedQuote = quote;
+    }
 
     let order;
     try {
@@ -154,7 +167,7 @@ export async function POST(req: Request) {
           phone: String(address.phone ?? "").trim(),
           email: String(address.email ?? "").trim(),
           zipCode: String(address.zipCode ?? "").trim(),
-          street: String(address.street ?? "").trim(),
+          street: String(address.street ?? "").trim() || (isWhatsAppDelivery ? "A combinar pelo WhatsApp" : ""),
           number: String(address.number ?? "").trim(),
           neighborhood: String(address.neighborhood ?? "").trim(),
           city: String(address.city ?? "").trim(),
@@ -165,9 +178,9 @@ export async function POST(req: Request) {
         },
         paymentMethod: paymentMethod.trim().toUpperCase(),
         shippingCost: selectedQuote.price,
-        shippingService: `${selectedQuote.company} - ${selectedQuote.name}`,
+        shippingService: isWhatsAppDelivery ? WHATSAPP_SHIPPING_LABEL : `${selectedQuote.company} - ${selectedQuote.name}`,
         shippingServiceId: selectedQuote.id,
-        shippingDeadline: selectedQuote.deliveryDays,
+        shippingDeadline: selectedQuote.deliveryDays ?? undefined,
         checkoutKey,
         couponCode: isNonEmptyString(couponCode) ? couponCode.trim() : null,
       });

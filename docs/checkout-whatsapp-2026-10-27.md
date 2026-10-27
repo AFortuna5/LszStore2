@@ -1,36 +1,32 @@
 # Entrega combinada pelo WhatsApp — 27/10/2026
 
-## Solicitação e comportamento
+## Decisão vigente (revisão 2)
 
-Incluir no frete do checkout uma opção de continuar pelo WhatsApp para quem deseja chamar um Uber e preparar automaticamente a mensagem com o pedido da pessoa.
+Arthur decidiu nesta sessão que **o pagamento é sempre feito pelo site** e o WhatsApp serve apenas para combinar a retirada por Uber após o pagamento. O modo anterior (pedido inteiro combinado no WhatsApp, sem pagamento) foi substituído. As opções de frete normais (Correios/Melhor Envio) continuam existindo ao lado da opção WhatsApp.
 
-A seção Entrega oferece a opção selecionável “WhatsApp · retirada por Uber”, com valor “a combinar”. Ao continuar por essa opção, o site abre `https://wa.me/5551996957614` com a mensagem já preenchida.
+## Fluxo atual
 
-A mensagem contém:
-
-- produtos, SKU/referência, variação, quantidade e valor de cada item;
-- subtotal, cupom e desconto aplicado, quando houver;
-- total dos produtos, deixando o valor da corrida para combinar separadamente;
-- nome, telefone e e-mail informados no checkout;
-- endereço informado ou indicação de que será combinado no atendimento.
-
-Para WhatsApp/Uber, nome, telefone e e-mail continuam obrigatórios. O endereço e a cotação de frete não são exigidos, pois a retirada é combinada no atendimento. Se o CEP for informado, o checkout ainda preenche os campos de endereço, mas não substitui a opção WhatsApp por uma cotação.
-
-Para as demais opções de entrega, o fluxo anterior continua exigindo endereço, cálculo/seleção do frete, conta do cliente e pagamento pela Stripe.
-
-Abrir a conversa não confirma nem cobra o pedido, não altera estoque e preserva o carrinho. O envio da mensagem depende da ação do cliente no WhatsApp.
+1. Na seção Entrega, a opção selecionável "WhatsApp · retirada por Uber" aparece junto das cotações, com valor "A combinar" (o cliente paga a corrida direto ao Uber).
+2. Com essa opção, nome, telefone e e-mail são obrigatórios; endereço e cotação de frete não são exigidos. CEP informado ainda preenche o endereço automaticamente.
+3. O checkout exige login como uma compra normal, cria o pedido via `/api/orders` com `shippingServiceId = "WHATSAPP_UBER"` (frete R$ 0, serviço "WhatsApp - retirada por Uber") e abre o pagamento Stripe.
+4. Após a confirmação do pagamento, a página de retorno (`/checkout/retorno`) exibe o botão "Combinar retirada pelo WhatsApp", que abre `https://wa.me/5551996957614` com mensagem automática contendo número do pedido, itens, variações e nome do cliente.
+5. No painel admin, o pedido aparece com a entrega "WhatsApp - retirada por Uber".
 
 ## Implementação
 
-- `src/shared/checkout-whatsapp.ts`: identificador da opção, número de destino e mensagem automática do pedido.
-- `src/templates/checkout/WhatsAppDeliveryOption.tsx`: opção de entrega e botão de continuação.
-- `src/app/checkout/page.tsx`: seleção da entrega, validação, resumo, cálculo de CEP e abertura do WhatsApp.
+- `src/shared/checkout-whatsapp.ts`: identificador/rótulo da opção, número de destino e mensagem de retirada com o código do pedido.
+- `src/templates/checkout/WhatsAppDeliveryOption.tsx`: opção de entrega selecionável.
+- `src/app/checkout/page.tsx`: endereço opcional para WhatsApp e envio do `shippingServiceId` correspondente.
+- `src/app/api/orders/route.ts`: aceita `WHATSAPP_UBER` sem cotação de frete; exige apenas nome/telefone/e-mail nesse caso; `street` vazio vira "A combinar pelo WhatsApp".
+- `src/app/api/orders/payment-status/route.ts`: retorna itens e `shippingServiceId` para montar o botão.
+- `src/templates/checkout/PaymentStatus.tsx`: botão do WhatsApp exibido após pagamento aprovado.
+- `src/templates/admin/AdminOrdersClient.tsx`: prazo de entrega oculto quando não existe.
 - `tests/checkout-whatsapp.test.ts`: regressão da mensagem e do número de destino.
 
 ## Validação
 
-- `npm run check`: lint, 37 testes existentes, TypeScript e build aprovados.
-- Dois testes novos validam a mensagem completa e o número `5551996957614`.
+- `npm run check`: lint, testes, TypeScript e build aprovados.
+- Navegador: seleção da opção, envio do pedido pela API e retorno esperados.
 - As verificações não enviaram mensagens reais nem realizaram compras.
 
 Não há migração de banco nem configuração nova. A publicação utiliza o projeto `lszstore2` na Vercel, conectado ao repositório `AFortuna5/LszStore2`.
