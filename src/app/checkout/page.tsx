@@ -213,12 +213,12 @@ export default function CheckoutPage() {
                   <input required name="fullName" defaultValue={user?.name} className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="Nome completo" />
                   <input required name="phone" className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="Telefone" />
                   <input required type="email" name="email" defaultValue={user?.email} className="md:col-span-2 rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="E-mail" />
-                  <input required={!isWhatsAppShipping} name="zipCode" onBlur={(event) => void calculateShipping(event.target.value, event.currentTarget.form ?? undefined)} className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="CEP" />
-                  <input required={!isWhatsAppShipping} name="city" className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="Cidade" />
-                  <input required={!isWhatsAppShipping} maxLength={2} name="state" className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="UF" />
-                  <input required={!isWhatsAppShipping} name="street" className="md:col-span-2 rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="Endereco" />
-                  <input required={!isWhatsAppShipping} name="number" className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="Numero" />
-                  <input required={!isWhatsAppShipping} name="neighborhood" className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="Bairro" />
+                  <input required name="zipCode" onBlur={(event) => void calculateShipping(event.target.value, event.currentTarget.form ?? undefined)} className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="CEP" />
+                  <input required name="city" className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="Cidade" />
+                  <input required maxLength={2} name="state" className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="UF" />
+                  <input required name="street" className="md:col-span-2 rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="Endereco" />
+                  <input required name="number" className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="Numero" />
+                  <input required name="neighborhood" className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="Bairro" />
                   <input name="complement" className="md:col-span-2 rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="Complemento" />
                 </div>
               </div>

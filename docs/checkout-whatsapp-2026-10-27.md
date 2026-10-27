@@ -7,17 +7,17 @@ Arthur decidiu nesta sessão que **o pagamento é sempre feito pelo site** e o W
 ## Fluxo atual
 
 1. Na seção Entrega, a opção selecionável "WhatsApp · retirada por Uber" aparece junto das cotações, com valor "A combinar" (o cliente paga a corrida direto ao Uber).
-2. Com essa opção, nome, telefone e e-mail são obrigatórios; endereço e cotação de frete não são exigidos. CEP informado ainda preenche o endereço automaticamente.
+2. Com essa opção, o endereço completo também é obrigatório (decisão de Arthur na revisão seguinte), pois a mensagem já leva o pedido e o endereço de entrega. A cotação de frete não é exigida, pois a corrida do Uber é combinada à parte.
 3. O checkout exige login como uma compra normal, cria o pedido via `/api/orders` com `shippingServiceId = "WHATSAPP_UBER"` (frete R$ 0, serviço "WhatsApp - retirada por Uber") e abre o pagamento Stripe.
-4. Após a confirmação do pagamento, a página de retorno (`/checkout/retorno`) exibe o botão "Combinar retirada pelo WhatsApp", que abre `https://wa.me/5551996957614` com mensagem automática contendo número do pedido, itens, variações e nome do cliente.
+4. Após a confirmação do pagamento, a página de retorno (`/checkout/retorno`) exibe o botão "Combinar retirada pelo WhatsApp", que abre `https://wa.me/5551996957614` com mensagem automática contendo número do pedido, itens, variações, nome do cliente e endereço de entrega.
 5. No painel admin, o pedido aparece com a entrega "WhatsApp - retirada por Uber".
 
 ## Implementação
 
 - `src/shared/checkout-whatsapp.ts`: identificador/rótulo da opção, número de destino e mensagem de retirada com o código do pedido.
 - `src/templates/checkout/WhatsAppDeliveryOption.tsx`: opção de entrega selecionável.
-- `src/app/checkout/page.tsx`: endereço opcional para WhatsApp e envio do `shippingServiceId` correspondente.
-- `src/app/api/orders/route.ts`: aceita `WHATSAPP_UBER` sem cotação de frete; exige apenas nome/telefone/e-mail nesse caso; `street` vazio vira "A combinar pelo WhatsApp".
+- `src/app/checkout/page.tsx`: endereço obrigatório em todas as entregas e envio do `shippingServiceId` correspondente.
+- `src/app/api/orders/route.ts`: aceita `WHATSAPP_UBER` sem cotação de frete; exige o endereço completo como nas demais entregas.
 - `src/app/api/orders/payment-status/route.ts`: retorna itens e `shippingServiceId` para montar o botão.
 - `src/templates/checkout/PaymentStatus.tsx`: botão do WhatsApp exibido após pagamento aprovado.
 - `src/templates/admin/AdminOrdersClient.tsx`: prazo de entrega oculto quando não existe.

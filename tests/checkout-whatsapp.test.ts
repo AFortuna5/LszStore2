@@ -10,6 +10,15 @@ import {
 const order = {
   code: "AB12CD34",
   customerName: "Ana Cliente",
+  address: {
+    zipCode: "94900-000",
+    street: "Rua Teste",
+    number: "123",
+    neighborhood: "Centro",
+    city: "Cachoeirinha",
+    state: "RS",
+    complement: "Apto 10",
+  },
   items: [
     { name: "CHINELO ARMANI EXCHANGE", variantLabel: "40", quantity: 2 },
     { name: "Camiseta", variantLabel: null, quantity: 1 },
@@ -17,7 +26,7 @@ const order = {
 };
 
 describe("retirada por Uber combinada pelo WhatsApp", () => {
-  it("identifica o pedido pago com itens, variacao e nome do cliente", () => {
+  it("identifica o pedido pago com itens, variacao, cliente e endereco", () => {
     const message = buildWhatsAppPickupMessage(order);
 
     for (const expected of [
@@ -26,6 +35,11 @@ describe("retirada por Uber combinada pelo WhatsApp", () => {
       "2x CHINELO ARMANI EXCHANGE (40)",
       "1x Camiseta",
       "Nome: Ana Cliente",
+      "ENDEREÇO PARA ENTREGA",
+      "Rua Teste, 123",
+      "Apto 10",
+      "Cachoeirinha - RS",
+      "CEP 94900-000",
       "local e o horário de retirada",
     ]) {
       expect(message).toContain(expected);

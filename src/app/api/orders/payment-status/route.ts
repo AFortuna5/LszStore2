@@ -15,6 +15,13 @@ export async function GET(req: Request) {
       paymentStatus: true,
       shippingServiceId: true,
       customerName: true,
+      zipCode: true,
+      street: true,
+      number: true,
+      neighborhood: true,
+      city: true,
+      state: true,
+      complement: true,
       items: { select: { productName: true, variantLabel: true, quantity: true } },
     },
   });

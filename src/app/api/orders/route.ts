@@ -124,13 +124,9 @@ export async function POST(req: Request) {
     if (existingResponse) return existingResponse;
 
     const isWhatsAppDelivery = String(shippingServiceId ?? "") === WHATSAPP_SHIPPING_ID;
-    const requiredAddressFields = isWhatsAppDelivery
-      ? ["fullName", "phone", "email"]
-      : ["fullName", "phone", "email", "zipCode", "street", "number", "neighborhood", "city", "state"];
+    const requiredAddressFields = ["fullName", "phone", "email", "zipCode", "street", "number", "neighborhood", "city", "state"];
     if (requiredAddressFields.some((field) => !isNonEmptyString(address[field]))) {
-      return jsonError(isWhatsAppDelivery
-        ? "Informe nome, telefone e e-mail para continuar"
-        : "Preencha todos os dados obrigatorios do endereco");
+      return jsonError("Preencha todos os dados obrigatorios do endereco");
     }
 
     const parsedItems = items.map((item) => {
@@ -167,7 +163,7 @@ export async function POST(req: Request) {
           phone: String(address.phone ?? "").trim(),
           email: String(address.email ?? "").trim(),
           zipCode: String(address.zipCode ?? "").trim(),
-          street: String(address.street ?? "").trim() || (isWhatsAppDelivery ? "A combinar pelo WhatsApp" : ""),
+          street: String(address.street ?? "").trim(),
           number: String(address.number ?? "").trim(),
           neighborhood: String(address.neighborhood ?? "").trim(),
           city: String(address.city ?? "").trim(),

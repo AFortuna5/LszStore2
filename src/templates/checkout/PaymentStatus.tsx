@@ -13,6 +13,13 @@ type PaymentOrder = {
   paymentStatus: string;
   shippingServiceId: string | null;
   customerName: string;
+  zipCode: string;
+  street: string;
+  number: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  complement: string | null;
   items: { productName: string; variantLabel: string | null; quantity: number }[];
 };
 
@@ -46,6 +53,15 @@ export default function PaymentStatus({ sessionId }: { sessionId: string }) {
     ? buildWhatsAppPickupUrl({
         code: order.id.slice(-8).toUpperCase(),
         customerName: order.customerName,
+        address: {
+          zipCode: order.zipCode,
+          street: order.street,
+          number: order.number,
+          neighborhood: order.neighborhood,
+          city: order.city,
+          state: order.state,
+          complement: order.complement,
+        },
         items: order.items.map((item) => ({ name: item.productName, variantLabel: item.variantLabel, quantity: item.quantity })),
       })
     : null;

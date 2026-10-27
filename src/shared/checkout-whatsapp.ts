@@ -10,13 +10,37 @@ export type WhatsAppPickupItem = {
   quantity: number;
 };
 
+export type WhatsAppPickupAddress = {
+  zipCode?: string;
+  street?: string;
+  number?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
+  complement?: string | null;
+};
+
 export type WhatsAppPickupOrder = {
   code: string;
   customerName: string;
   items: WhatsAppPickupItem[];
+  address?: WhatsAppPickupAddress;
 };
 
+function text(value: string | null | undefined) {
+  return value?.trim() ?? "";
+}
+
 export function buildWhatsAppPickupMessage(order: WhatsAppPickupOrder) {
+  const address = order.address ?? {};
+  const addressLines = [
+    [text(address.street), text(address.number)].filter(Boolean).join(", "),
+    text(address.complement),
+    text(address.neighborhood),
+    [text(address.city), text(address.state)].filter(Boolean).join(" - "),
+    text(address.zipCode) ? `CEP ${text(address.zipCode)}` : "",
+  ].filter(Boolean);
+
   return [
     `Olá, LSZ Store! Meu pedido #${order.code} foi pago no site e quero combinar a retirada por Uber.`,
     "",
@@ -26,6 +50,7 @@ export function buildWhatsAppPickupMessage(order: WhatsAppPickupOrder) {
     ),
     "",
     `Nome: ${order.customerName}`,
+    ...(addressLines.length ? ["", "ENDEREÇO PARA ENTREGA", ...addressLines] : []),
     "",
     "Podem confirmar o local e o horário de retirada? O valor da corrida do Uber fica por minha conta.",
   ].join("\n");

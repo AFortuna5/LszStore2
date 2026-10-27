@@ -27,8 +27,8 @@ export default function WhatsAppDeliveryOption({
         <span>
           <strong className="text-white">WhatsApp · retirada por Uber</strong>
           <small className="mt-1 block">
-            Pague pelo site normalmente e depois combine local e horario de retirada com a loja pelo WhatsApp.
-            O valor da corrida fica por sua conta.
+            Pague pelo site normalmente e depois combine a retirada por Uber com a loja pelo WhatsApp.
+            Seu pedido e endereco ja chegam na mensagem. O valor da corrida fica por sua conta.
           </small>
         </span>
       </span>
