@@ -8,6 +8,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import SiteShell from "@/templates/layout/SiteShell";
 import { formatCurrency, getProductPrice, type StorefrontProduct } from "@/shared/storefront";
 import CouponBox, { type AppliedCoupon } from "@/templates/cart/CouponBox";
+import WhatsAppDeliveryOption from "@/templates/checkout/WhatsAppDeliveryOption";
 
 type CartItem = {
   productId: string;
@@ -193,13 +194,13 @@ export default function CheckoutPage() {
           <h1 className="mb-8 font-montserrat text-4xl font-black uppercase text-white md:text-5xl">
             Checkout
           </h1>
-          <div className="grid gap-8 lg:grid-cols-[1fr_380px]">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_380px]">
             <form action={handleSubmit} className="space-y-6 rounded-lg border border-border bg-dark-blue p-6">
               <div>
                 <h2 className="mb-4 font-montserrat text-xl font-bold uppercase text-white">
                   Dados de entrega
                 </h2>
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <input required name="fullName" defaultValue={user?.name} className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="Nome completo" />
                   <input required name="phone" className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="Telefone" />
                   <input required type="email" name="email" defaultValue={user?.email} className="md:col-span-2 rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="E-mail" />
@@ -217,6 +218,16 @@ export default function CheckoutPage() {
                   Entrega
                 </h2>
                 <div className="grid gap-3">
+                  <WhatsAppDeliveryOption
+                    items={cartProducts.map((item) => ({
+                      name: item.product.name,
+                      variantLabel: item.variant?.label,
+                      quantity: item.quantity,
+                      unitPrice: item.variant?.price ?? getProductPrice(item.product),
+                    }))}
+                    couponCode={coupon?.code}
+                    disabled={loading || stockIssues.length > 0 || cartProducts.length !== items.length}
+                  />
                   {shippingLoading && <p className="text-sm text-silver">Calculando frete...</p>}
                   {quotes.map((quote) => (
                     <label
