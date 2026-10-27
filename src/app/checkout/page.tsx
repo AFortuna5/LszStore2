@@ -28,6 +28,7 @@ type ShippingQuote = { id: string; name: string; company: string; price: number;
 export default function CheckoutPage() {
   const router = useRouter();
   const [user, setUser] = useState<SessionUser | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const [catalog, setCatalog] = useState<StorefrontProduct[]>([]);
   const [items, setItems] = useState<CartItem[]>([]);
   const [status, setStatus] = useState("");
@@ -42,7 +43,8 @@ export default function CheckoutPage() {
     fetch("/api/auth/me")
       .then((response) => (response.ok ? response.json() : null))
       .then((payload) => setUser(payload?.user ?? null))
-      .catch(() => setUser(null));
+      .catch(() => setUser(null))
+      .finally(() => setAuthChecked(true));
 
     fetch("/api/products?limit=100")
       .then((response) => response.json())
@@ -94,6 +96,10 @@ export default function CheckoutPage() {
       setStatus("Ha produtos esgotados ou sem quantidade suficiente. Atualize o carrinho para continuar.");
       return;
     }
+    if (!authChecked) {
+      setStatus("Verificando sua sessao. Tente novamente em alguns segundos.");
+      return;
+    }
     if (!user) {
       setStatus("Entre na sua conta antes de finalizar a compra.");
       return;
@@ -107,38 +113,46 @@ export default function CheckoutPage() {
     setStatus("");
     checkoutKey.current ??= crypto.randomUUID();
 
-    const response = await fetch("/api/orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Idempotency-Key": checkoutKey.current },
-      body: JSON.stringify({
-        userId: user.id,
-        items: cartProducts.map((item) => ({
-          productId: item.product.id,
-          variantId: item.variantId,
-          quantity: item.quantity,
-        })),
-        address: {
-          fullName: formData.get("fullName"),
-          phone: formData.get("phone"),
-          email: formData.get("email"),
-          zipCode: formData.get("zipCode"),
-          street: formData.get("street"),
-          number: formData.get("number"),
-          neighborhood: formData.get("neighborhood"),
-          city: formData.get("city"),
-          state: formData.get("state"),
-          complement: formData.get("complement"),
-        },
-        paymentMethod: "STRIPE",
-        shippingServiceId: isWhatsAppShipping ? WHATSAPP_SHIPPING_ID : selectedQuote?.id,
-        couponCode: coupon?.code ?? null,
-      }),
-    });
-
-    const payload = await response.json();
+    let payload: { order?: unknown; paymentUrl?: string; error?: string };
+    let responseOk = false;
+    try {
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Idempotency-Key": checkoutKey.current },
+        body: JSON.stringify({
+          userId: user.id,
+          items: cartProducts.map((item) => ({
+            productId: item.product.id,
+            variantId: item.variantId,
+            quantity: item.quantity,
+          })),
+          address: {
+            fullName: formData.get("fullName"),
+            phone: formData.get("phone"),
+            email: formData.get("email"),
+            zipCode: formData.get("zipCode"),
+            street: formData.get("street"),
+            number: formData.get("number"),
+            neighborhood: formData.get("neighborhood"),
+            city: formData.get("city"),
+            state: formData.get("state"),
+            complement: formData.get("complement"),
+          },
+          paymentMethod: "STRIPE",
+          shippingServiceId: isWhatsAppShipping ? WHATSAPP_SHIPPING_ID : selectedQuote?.id,
+          couponCode: coupon?.code ?? null,
+        }),
+      });
+      responseOk = response.ok;
+      payload = await response.json().catch(() => ({}));
+    } catch {
+      setStatus("Falha de conexao ao criar o pedido. Verifique sua internet e tente novamente.");
+      setLoading(false);
+      return;
+    }
     setLoading(false);
 
-    if (!response.ok) {
+    if (!responseOk) {
       setStatus(payload.error ?? "Nao foi possivel criar o pedido");
       return;
     }
@@ -173,19 +187,17 @@ export default function CheckoutPage() {
           }
         }
       }
-      if (selectedShipping !== WHATSAPP_SHIPPING_ID) {
-        const response = await fetch("/api/shipping/quote", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ zipCode: zip, items }),
-        });
-        const payload = await response.json();
-        if (!response.ok) {
-          setStatus(payload.error ?? "Nao foi possivel calcular o frete");
-          return;
-        }
-        setQuotes(payload.quotes);
-        setSelectedShipping((current) => (current === WHATSAPP_SHIPPING_ID ? current : payload.quotes[0]?.id ?? ""));
+      const response = await fetch("/api/shipping/quote", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ zipCode: zip, items }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        setStatus(payload.error ?? "Nao foi possivel calcular o frete");
+        return;
       }
+      setQuotes(payload.quotes);
+      setSelectedShipping((current) => (current === WHATSAPP_SHIPPING_ID ? current : payload.quotes[0]?.id ?? ""));
     } catch {
       setStatus("Nao foi possivel calcular o frete. Verifique sua conexao e tente novamente.");
     } finally {
@@ -229,7 +241,6 @@ export default function CheckoutPage() {
                 <div className="grid gap-3">
                   <WhatsAppDeliveryOption
                     checked={isWhatsAppShipping}
-                    disabled={orderUnavailable}
                     onSelect={() => setSelectedShipping(WHATSAPP_SHIPPING_ID)}
                   />
                   {shippingLoading && <p className="text-sm text-silver">Calculando frete...</p>}

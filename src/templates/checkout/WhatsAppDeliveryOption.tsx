@@ -4,23 +4,33 @@ import { WHATSAPP_SHIPPING_ID } from "@/shared/checkout-whatsapp";
 
 export default function WhatsAppDeliveryOption({
   checked,
-  disabled = false,
   onSelect,
 }: {
   checked: boolean;
-  disabled?: boolean;
   onSelect: () => void;
 }) {
   return (
-    <label className={`flex items-center gap-3 rounded border p-4 transition-colors ${disabled ? "cursor-not-allowed" : "cursor-pointer"} ${checked ? "border-emerald-400 bg-emerald-400/10" : "border-emerald-400/40 bg-emerald-400/5"}`}>
+    <div
+      role="radio"
+      aria-checked={checked}
+      tabIndex={0}
+      onClick={onSelect}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect();
+        }
+      }}
+      className={`flex cursor-pointer touch-manipulation items-center gap-3 rounded border p-4 transition-colors select-none ${checked ? "border-emerald-400 bg-emerald-400/10" : "border-emerald-400/40 bg-emerald-400/5"}`}
+    >
       <input
         type="radio"
         name="shipping"
         value={WHATSAPP_SHIPPING_ID}
         checked={checked}
-        disabled={disabled}
         onChange={onSelect}
-        className="accent-emerald-400"
+        tabIndex={-1}
+        className="pointer-events-none accent-emerald-400"
       />
       <span className="flex flex-1 items-start gap-3 text-silver">
         <MessageCircle size={20} className="mt-0.5 shrink-0 text-emerald-300" aria-hidden="true" />
@@ -33,6 +43,6 @@ export default function WhatsAppDeliveryOption({
         </span>
       </span>
       <strong className="text-sm text-white">A combinar</strong>
-    </label>
+    </div>
   );
 }
