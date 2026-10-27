@@ -6,7 +6,7 @@ export const env = {
   appUrl: process.env.APP_URL ?? "http://localhost:3000",
   storeName: process.env.STORE_NAME ?? "LSZ Store",
   supportEmail: process.env.SUPPORT_EMAIL ?? storeContact.email,
-  originZip: (process.env.SHIPPING_ORIGIN_ZIP ?? "01001000").replace(/\D/g, ""),
+  originZip: (process.env.SHIPPING_ORIGIN_ZIP ?? "94950001").replace(/\D/g, ""),
   freeShippingFrom: Number(process.env.FREE_SHIPPING_FROM ?? 399),
   fallbackShippingPrice: Number(process.env.FALLBACK_SHIPPING_PRICE ?? 24.9),
   fallbackShippingDays: Number(process.env.FALLBACK_SHIPPING_DAYS ?? 7),
