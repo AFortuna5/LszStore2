@@ -3,13 +3,13 @@ import Link from "next/link";
 import { Star } from "lucide-react";
 
 import AddToCartButton from "@/templates/products/AddToCartButton";
-import { formatCurrency, StorefrontProduct } from "@/shared/storefront";
+import { formatCurrency, getProductPath, StorefrontProduct } from "@/shared/storefront";
 
 export default function ProductCard({ product }: { product: StorefrontProduct }) {
   return (
     <article className="group overflow-hidden rounded-lg border border-border bg-black transition-colors hover:border-neon-blue/60">
       <Link
-        href={`/produto/${product.slug}`}
+        href={getProductPath(product.slug)}
         className="relative block aspect-square overflow-hidden bg-dark-blue"
       >
         {product.discount && (
@@ -30,7 +30,7 @@ export default function ProductCard({ product }: { product: StorefrontProduct })
           {product.brand}
         </span>
         <Link
-          href={`/produto/${product.slug}`}
+          href={getProductPath(product.slug)}
           className="mb-3 font-poppins text-lg font-semibold text-white transition-colors hover:text-neon-blue"
         >
           {product.name}

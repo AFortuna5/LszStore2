@@ -14,7 +14,19 @@ export async function getStorefrontProducts() {
 }
 
 export async function getStorefrontProductBySlug(slug: string) {
-  const product = await prisma.product.findUnique({ where: { slug }, include: productInclude });
+  let product = await prisma.product.findUnique({ where: { slug }, include: productInclude });
+  if (!product && slug.includes("%")) {
+    let decodedSlug: string;
+    try {
+      decodedSlug = decodeURIComponent(slug);
+    } catch {
+      return null;
+    }
+    // Preserve literal percent signs in existing slugs by trying the exact value first.
+    if (decodedSlug !== slug) {
+      product = await prisma.product.findUnique({ where: { slug: decodedSlug }, include: productInclude });
+    }
+  }
   return product ? toStorefrontProduct(product) : null;
 }
 

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { formatCurrency, getProductPrice, type StorefrontProduct } from "@/shared/storefront";
+import { formatCurrency, getProductPath, getProductPrice, type StorefrontProduct } from "@/shared/storefront";
 import CouponBox, { type AppliedCoupon } from "@/templates/cart/CouponBox";
 
 type CartItem = {
@@ -102,7 +102,7 @@ export default function CartClient() {
             className="grid gap-4 rounded-lg border border-border bg-dark-blue p-4 sm:grid-cols-[120px_1fr_auto]"
           >
             <Link
-              href={`/produto/${product.slug}`}
+              href={getProductPath(product.slug)}
               className="relative aspect-square overflow-hidden rounded bg-black"
             >
               <Image
@@ -118,7 +118,7 @@ export default function CartClient() {
                 {product.brand}
               </p>
               <Link
-                href={`/produto/${product.slug}`}
+                href={getProductPath(product.slug)}
                 className="font-poppins text-lg font-semibold text-white hover:text-neon-blue"
               >
                 {product.name}

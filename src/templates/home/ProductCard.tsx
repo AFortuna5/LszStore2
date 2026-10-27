@@ -2,7 +2,7 @@ import { ArrowUpRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-import { formatCurrency, getProductPrice, type StorefrontProduct } from "@/shared/storefront";
+import { formatCurrency, getProductPath, getProductPrice, type StorefrontProduct } from "@/shared/storefront";
 
 export default function ProductCard({ product }: { product: StorefrontProduct }) {
   const price = getProductPrice(product);
@@ -10,7 +10,7 @@ export default function ProductCard({ product }: { product: StorefrontProduct })
   return (
     <article className="group flex min-w-0 flex-col">
       <Link
-        href={`/produto/${product.slug}`}
+        href={getProductPath(product.slug)}
         className="relative mb-4 aspect-[4/5] overflow-hidden bg-[#07162d]"
       >
         <Image
@@ -38,7 +38,7 @@ export default function ProductCard({ product }: { product: StorefrontProduct })
       <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-silver">
         {product.brand}
       </p>
-      <Link href={`/produto/${product.slug}`} className="line-clamp-2 min-h-11 font-poppins text-sm font-medium text-white hover:text-neon-blue hover:underline">
+      <Link href={getProductPath(product.slug)} className="line-clamp-2 min-h-11 font-poppins text-sm font-medium text-white hover:text-neon-blue hover:underline">
         {product.name}
       </Link>
       <div className="mt-2 flex flex-wrap items-baseline gap-x-2">

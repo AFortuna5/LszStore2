@@ -1,7 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { getProductPrice, parseImageList, parseTextList, toStorefrontProduct } from "../src/shared/storefront";
+import { getProductPath, getProductPrice, parseImageList, parseTextList, toStorefrontProduct } from "../src/shared/storefront";
 
 describe("storefront", () => {
+  it.each(["Chinelo armani exchange", "Edição #1? Azul/Branco 50%", "camiseta-armani-exchange"])(
+    "preserva o slug %s em um unico segmento da URL",
+    (slug) => {
+      const url = new URL(getProductPath(slug), "https://lszstore.example");
+      expect(url.search).toBe("");
+      expect(url.hash).toBe("");
+      expect(url.pathname.split("/")).toHaveLength(3);
+      expect(decodeURIComponent(url.pathname.split("/")[2])).toBe(slug);
+    },
+  );
+
   it("normaliza listas de imagens e detalhes", () => {
     expect(parseImageList("/a.jpg, /b.jpg|https://cdn.example.com/c.jpg")).toEqual([
       "/a.jpg",

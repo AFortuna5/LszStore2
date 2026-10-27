@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
-import type { StorefrontProduct } from "@/shared/storefront";
+import { getProductPath, type StorefrontProduct } from "@/shared/storefront";
 
 export default function BestSellers() {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "start" });
@@ -79,7 +79,7 @@ export default function BestSellers() {
                 key={product.id}
                 className="embla__slide min-w-0 flex-[0_0_80%] pr-4 sm:flex-[0_0_40%] md:flex-[0_0_30%] lg:flex-[0_0_20%]"
               >
-                <Link href={`/produto/${product.slug}`} className="group block">
+                <Link href={getProductPath(product.slug)} className="group block">
                   <div className="flex h-full flex-col rounded-lg border border-border bg-dark-blue p-4 transition-colors hover:border-silver">
                     <div className="relative mb-4 aspect-square overflow-hidden rounded bg-black">
                       <Image

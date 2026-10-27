@@ -6,6 +6,7 @@ import SiteShell from "@/templates/layout/SiteShell";
 import ProductPurchasePanel from "@/templates/products/ProductPurchasePanel";
 import ProductGrid from "@/templates/products/ProductGrid";
 import { getStorefrontProductBySlug, getStorefrontProducts } from "@/server/repositories/catalog";
+import { getProductPath } from "@/shared/storefront";
 import type { Metadata } from "next";
 
 type ProductPageProps = {
@@ -20,7 +21,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   return {
     title: `${product.name} | LSZ Store`,
     description: product.description.slice(0, 160),
-    alternates: { canonical: `/produto/${product.slug}` },
+    alternates: { canonical: getProductPath(product.slug) },
     openGraph: { title: product.name, description: product.description, images: product.gallery },
   };
 }
