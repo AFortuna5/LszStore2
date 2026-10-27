@@ -9,6 +9,7 @@ import SiteShell from "@/templates/layout/SiteShell";
 import { formatCurrency, getProductPrice, type StorefrontProduct } from "@/shared/storefront";
 import CouponBox, { type AppliedCoupon } from "@/templates/cart/CouponBox";
 import WhatsAppDeliveryOption from "@/templates/checkout/WhatsAppDeliveryOption";
+import { buildWhatsAppOrderUrl, WHATSAPP_SHIPPING_ID } from "@/shared/checkout-whatsapp";
 
 type CartItem = {
   productId: string;
@@ -36,6 +37,7 @@ export default function CheckoutPage() {
   const [shippingLoading, setShippingLoading] = useState(false);
   const [coupon, setCoupon] = useState<AppliedCoupon | null>(null);
   const checkoutKey = useRef<string | null>(null);
+  const formRef = useRef<HTMLFormElement | null>(null);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -76,15 +78,90 @@ export default function CheckoutPage() {
     (sum, item) => sum + (item.variant?.price ?? getProductPrice(item.product)) * item.quantity,
     0
   );
-  const selectedQuote = quotes.find((quote) => quote.id === selectedShipping);
+  const isWhatsAppShipping = selectedShipping === WHATSAPP_SHIPPING_ID;
+  const selectedQuote = isWhatsAppShipping ? undefined : quotes.find((quote) => quote.id === selectedShipping);
   const shipping = selectedQuote?.price ?? 0;
   const couponItems = useMemo(() => cartProducts.map((item) => ({ productId: item.productId, variantId: item.variantId, quantity: item.quantity })), [cartProducts]);
   const discount = coupon?.discountAmount ?? 0;
   const total = Math.max(0, subtotal - discount) + shipping;
+  const whatsappItems = useMemo(
+    () =>
+      cartProducts.map((item) => ({
+        name: item.product.name,
+        reference: item.variant?.sku ?? item.product.slug,
+        variantLabel: item.variant?.label,
+        quantity: item.quantity,
+        unitPrice: item.variant?.price ?? getProductPrice(item.product),
+      })),
+    [cartProducts],
+  );
+  const orderUnavailable = loading || cartProducts.length === 0 || cartProducts.length !== items.length || stockIssues.length > 0;
 
-  async function handleSubmit(formData: FormData) {
+  function formText(formData: FormData, name: string) {
+    return String(formData.get(name) ?? "").trim();
+  }
+
+  function validateWhatsAppContact() {
+    for (const name of ["fullName", "phone", "email"]) {
+      const input = formRef.current?.elements.namedItem(name) as HTMLInputElement | null;
+      if (input && !input.reportValidity()) return false;
+    }
+    return true;
+  }
+
+  function continueWithWhatsApp(formData: FormData) {
+    if (cartProducts.length === 0 || cartProducts.length !== items.length) {
+      setStatus("Revise o carrinho antes de continuar pelo WhatsApp.");
+      return;
+    }
     if (stockIssues.length > 0) {
       setStatus("Ha produtos esgotados ou sem quantidade suficiente. Atualize o carrinho para continuar.");
+      return;
+    }
+    if (!validateWhatsAppContact()) return;
+
+    const url = buildWhatsAppOrderUrl({
+      customer: {
+        fullName: formText(formData, "fullName"),
+        phone: formText(formData, "phone"),
+        email: formText(formData, "email"),
+      },
+      address: {
+        zipCode: formText(formData, "zipCode"),
+        street: formText(formData, "street"),
+        number: formText(formData, "number"),
+        neighborhood: formText(formData, "neighborhood"),
+        city: formText(formData, "city"),
+        state: formText(formData, "state"),
+        complement: formText(formData, "complement"),
+      },
+      items: whatsappItems,
+      coupon,
+    });
+    const popup = window.open(url, "_blank");
+    if (popup) popup.opener = null;
+    else window.location.assign(url);
+    setStatus("Pedido preparado para continuar no WhatsApp. O carrinho permanece salvo ate a confirmacao.");
+  }
+
+  function handleWhatsAppClick() {
+    setSelectedShipping(WHATSAPP_SHIPPING_ID);
+    const form = formRef.current;
+    if (!form) return;
+    continueWithWhatsApp(new FormData(form));
+  }
+
+  async function handleSubmit(formData: FormData) {
+    if (cartProducts.length === 0 || cartProducts.length !== items.length) {
+      setStatus("Revise o carrinho antes de finalizar a compra.");
+      return;
+    }
+    if (stockIssues.length > 0) {
+      setStatus("Ha produtos esgotados ou sem quantidade suficiente. Atualize o carrinho para continuar.");
+      return;
+    }
+    if (isWhatsAppShipping) {
+      continueWithWhatsApp(formData);
       return;
     }
     if (!user) {
@@ -154,7 +231,7 @@ export default function CheckoutPage() {
     setShippingLoading(true);
     setStatus("");
     setQuotes([]);
-    setSelectedShipping("");
+    setSelectedShipping((current) => (current === WHATSAPP_SHIPPING_ID ? current : ""));
     try {
       if (form) {
         const cepResponse = await fetch(`/api/address/cep/${zip}`);
@@ -166,17 +243,19 @@ export default function CheckoutPage() {
           }
         }
       }
-      const response = await fetch("/api/shipping/quote", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ zipCode: zip, items }),
-      });
-      const payload = await response.json();
-      if (!response.ok) {
-        setStatus(payload.error ?? "Nao foi possivel calcular o frete");
-        return;
+      if (selectedShipping !== WHATSAPP_SHIPPING_ID) {
+        const response = await fetch("/api/shipping/quote", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ zipCode: zip, items }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          setStatus(payload.error ?? "Nao foi possivel calcular o frete");
+          return;
+        }
+        setQuotes(payload.quotes);
+        setSelectedShipping((current) => (current === WHATSAPP_SHIPPING_ID ? current : payload.quotes[0]?.id ?? ""));
       }
-      setQuotes(payload.quotes);
-      setSelectedShipping(payload.quotes[0]?.id ?? "");
     } catch {
       setStatus("Nao foi possivel calcular o frete. Verifique sua conexao e tente novamente.");
     } finally {
@@ -195,7 +274,7 @@ export default function CheckoutPage() {
             Checkout
           </h1>
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_380px]">
-            <form action={handleSubmit} className="space-y-6 rounded-lg border border-border bg-dark-blue p-6">
+            <form ref={formRef} action={handleSubmit} className="space-y-6 rounded-lg border border-border bg-dark-blue p-6">
               <div>
                 <h2 className="mb-4 font-montserrat text-xl font-bold uppercase text-white">
                   Dados de entrega
@@ -204,12 +283,12 @@ export default function CheckoutPage() {
                   <input required name="fullName" defaultValue={user?.name} className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="Nome completo" />
                   <input required name="phone" className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="Telefone" />
                   <input required type="email" name="email" defaultValue={user?.email} className="md:col-span-2 rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="E-mail" />
-                  <input required name="zipCode" onBlur={(event) => void calculateShipping(event.target.value, event.currentTarget.form ?? undefined)} className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="CEP" />
-                  <input required name="city" className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="Cidade" />
-                  <input required maxLength={2} name="state" className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="UF" />
-                  <input required name="street" className="md:col-span-2 rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="Endereco" />
-                  <input required name="number" className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="Numero" />
-                  <input required name="neighborhood" className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="Bairro" />
+                  <input required={!isWhatsAppShipping} name="zipCode" onBlur={(event) => void calculateShipping(event.target.value, event.currentTarget.form ?? undefined)} className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="CEP" />
+                  <input required={!isWhatsAppShipping} name="city" className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="Cidade" />
+                  <input required={!isWhatsAppShipping} maxLength={2} name="state" className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="UF" />
+                  <input required={!isWhatsAppShipping} name="street" className="md:col-span-2 rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="Endereco" />
+                  <input required={!isWhatsAppShipping} name="number" className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="Numero" />
+                  <input required={!isWhatsAppShipping} name="neighborhood" className="rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="Bairro" />
                   <input name="complement" className="md:col-span-2 rounded border border-border bg-black px-4 py-3 outline-none focus:border-neon-blue" placeholder="Complemento" />
                 </div>
               </div>
@@ -219,14 +298,10 @@ export default function CheckoutPage() {
                 </h2>
                 <div className="grid gap-3">
                   <WhatsAppDeliveryOption
-                    items={cartProducts.map((item) => ({
-                      name: item.product.name,
-                      variantLabel: item.variant?.label,
-                      quantity: item.quantity,
-                      unitPrice: item.variant?.price ?? getProductPrice(item.product),
-                    }))}
-                    couponCode={coupon?.code}
-                    disabled={loading || stockIssues.length > 0 || cartProducts.length !== items.length}
+                    checked={isWhatsAppShipping}
+                    disabled={orderUnavailable}
+                    onSelect={() => setSelectedShipping(WHATSAPP_SHIPPING_ID)}
+                    onContinue={handleWhatsAppClick}
                   />
                   {shippingLoading && <p className="text-sm text-silver">Calculando frete...</p>}
                   {quotes.map((quote) => (
@@ -241,7 +316,13 @@ export default function CheckoutPage() {
                   ))}
                 </div>
               </div>
-              <div className="rounded border border-border bg-black p-4 text-sm text-silver"><strong className="text-white">Pagamento seguro pela Stripe</strong><p className="mt-1">Escolha cartão ou Pix no ambiente protegido da Stripe.</p></div>
+              <div className="rounded border border-border bg-black p-4 text-sm text-silver">
+                {isWhatsAppShipping ? (
+                  <><strong className="text-white">Pedido preparado para o WhatsApp</strong><p className="mt-1">A mensagem leva os itens e valores para a loja confirmar pagamento e retirada por Uber.</p></>
+                ) : (
+                  <><strong className="text-white">Pagamento seguro pela Stripe</strong><p className="mt-1">Escolha cartao ou Pix no ambiente protegido da Stripe.</p></>
+                )}
+              </div>
               {stockIssues.length > 0 && (
                 <div className="rounded border border-red-500 bg-red-950/40 p-4 text-sm text-red-200">
                   <strong>Revise o estoque antes de pagar:</strong>
@@ -261,10 +342,10 @@ export default function CheckoutPage() {
               )}
               <button
                 type="submit"
-                disabled={loading || cartProducts.length === 0 || stockIssues.length > 0}
-                className="w-full rounded bg-neon-blue px-6 py-4 font-bold uppercase text-black transition-colors hover:bg-white disabled:opacity-50"
+                disabled={orderUnavailable}
+                className={`w-full rounded px-6 py-4 font-bold uppercase text-black transition-colors disabled:opacity-50 ${isWhatsAppShipping ? "bg-emerald-400 hover:bg-emerald-300" : "bg-neon-blue hover:bg-white"}`}
               >
-                {loading ? "Abrindo pagamento..." : "Finalizar compra e pagar"}
+                {loading ? "Abrindo pagamento..." : isWhatsAppShipping ? "Enviar pedido pelo WhatsApp" : "Finalizar compra e pagar"}
               </button>
               {status && <p className="text-sm text-neon-blue">{status}</p>}
             </form>
@@ -273,7 +354,9 @@ export default function CheckoutPage() {
                 Resumo do pedido
               </h2>
               <p className="mt-3 text-sm leading-relaxed text-silver">
-                Precos e frete sao recalculados com seguranca no servidor antes da criacao do pedido.
+                {isWhatsAppShipping
+                  ? "O pedido e preparado com os produtos para a loja confirmar pagamento e retirada no atendimento."
+                  : "Precos e frete sao recalculados com seguranca no servidor antes da criacao do pedido."}
               </p>
               <div className="mt-6 space-y-4">
                 <div className="flex gap-3 text-silver">
@@ -298,10 +381,10 @@ export default function CheckoutPage() {
                 {coupon && <div className="flex justify-between text-emerald-300"><span>Cupom {coupon.code}</span><span>-{formatCurrency(discount)}</span></div>}
                 <div className="flex justify-between">
                   <span>Frete</span>
-                  <span>{shipping === 0 ? "Gratis" : formatCurrency(shipping)}</span>
+                  <span>{isWhatsAppShipping ? "A combinar" : shipping === 0 ? "Gratis" : formatCurrency(shipping)}</span>
                 </div>
                 <div className="flex justify-between border-t border-border pt-3 font-bold text-white">
-                  <span>Total</span>
+                  <span>{isWhatsAppShipping ? "Total dos produtos" : "Total"}</span>
                   <span>{formatCurrency(total)}</span>
                 </div>
               </div>
